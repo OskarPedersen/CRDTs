@@ -1,0 +1,188 @@
+bundle set_op_or where
+import utils
+
+class LocalSet<t>
+  localSets : [LocalSet<t>]
+  idCounter : int
+  idUpper : int
+  idLower : int
+  hashMap : HashMap<t, HashSet<int>>
+
+  intEq : (int, int) -> bool
+  intToInt : (int) -> int
+
+  def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
+    this.idCounter = -1;
+    this.hashMap = new HashMap<t, HashSet<int>>(eq, toInt);
+    this.intEq = \(a : int, b : int) -> a == b;
+    this.intToInt = \(a : int) -> a;
+  }
+
+  def setup(localSets : [LocalSet<t>], idUpper : int, idLower : int) : void {
+    this.localSets = localSets;
+    this.idUpper = idUpper;
+    this.idLower = idLower;
+  }
+
+  def add(elem : t) : void {
+    let
+      id = this.nextID()
+    in {
+      repeat i <- |this.localSets| {
+        this.localSets[i]!addDownstream(elem, id)
+      }
+    }
+  }
+
+  def addDownstream(elem : t, id : int) : void {
+    match this.hashMap.getValue(elem) with
+    Nothing => {
+      let
+        set = new HashSet<int>(this.intEq, this.intToInt)
+      in {
+        set.add(id);
+        this.hashMap.put(elem, set)
+      }
+    }
+    Just set => {
+      set.add(id)
+    }
+  }
+
+
+  def remove(elem : t) : void {
+    match this.hashMap.getValue(elem) with
+    Nothing => {
+      ()
+    }
+    Just set => {
+      if (set.size() > 0) then {
+        repeat i <- |this.localSets| {
+          this.localSets[i]!removeDownstream(elem, set) -- TODO Clone set before sending it away!!!
+        }
+      }
+    }
+  }
+
+  def removeDownstream(elem : t, remove : HashSet<int>) : void {
+    match this.hashMap.getValue(elem) with
+    Nothing => ()
+    Just set => {
+      set.removeAll(remove)
+    }
+  }
+
+  def contains(elem : t) : bool {
+    match this.hashMap.getValue(elem) with
+    Nothing => false
+    Just set => set.size() > 0
+  }
+
+  def nextID() : int {
+    this.idCounter = this.idCounter + 1;
+    this.idCounter * this.idUpper + this.idLower;
+  }
+
+  def wait() : void {
+    ()
+  }
+
+  def getHashMap() : HashMap<t, HashSet<int>> {
+    this.hashMap
+  }
+
+passive class Set<t>
+  localSets : [LocalSet<t>]
+  def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
+    this.localSets = new [LocalSet<t>](numcores());
+    repeat i <- |this.localSets| {
+      this.localSets[i] = new LocalSet<t>(eq, toInt)
+    };
+    repeat i <- |this.localSets| {
+      (this.localSets[i]).setup(this.localSets,  |this.localSets|,  i)
+    }
+  }
+
+  def add(elem : t) : void {
+    (this.localSets[core()]).add(elem)
+  }
+
+  def remove(elem : t) : void {
+    (this.localSets[core()]).remove(elem)
+  }
+
+  def contains(elem : t) : Fut bool {
+    (this.localSets[core()]).contains(elem)
+  }
+
+  def wait() : void {
+    repeat i <- |this.localSets| {
+      (this.localSets[i]).wait()
+    }
+  }
+
+  def iterator() : SetIterator<t> {
+    new SetIterator<t>(get (this.localSets[core()]).getHashMap())
+  }
+
+passive class SetIterator<t>
+  hashMap : HashMap<t, HashSet<int>>
+  bucket : int
+  i : int
+  endReached : bool
+
+  def init(hashMap : HashMap<t, HashSet<int>>) : void {
+    this.hashMap = hashMap;
+    this.bucket = -1;
+    this.i = -1;
+    this.endReached = false;
+  }
+
+  def step() : void {
+    this.i = this.i + 1;
+    if (this.i >= this.hashMap.buckets.at(this.bucket).size()) then {
+      this.i = 0;
+      this.bucket = this.bucket + 1;
+      if (this.bucket >= this.hashMap.buckets.size()) then {
+        this.endReached = true;
+      }
+    }
+  }
+
+  def next() : Maybe t {
+    if (this.endReached) then {
+      Nothing : Maybe t
+    } else {
+      this.step();
+      while((this.hashMap.buckets.at(this.bucket).at(this.i).value.size() == 0) and (not this.endReached)) {
+        this.step();
+      };
+
+      if (this.endReached) then {
+        Nothing : Maybe t
+      } else {
+        Just this.hashMap.buckets.at(this.bucket).at(this.i).key;
+      }
+    }
+  }
+
+
+class Main {
+  def main() : void {
+    let
+      set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a)
+    in {
+      repeat i <- 5 {
+        set.add(i)
+      };
+      repeat i <- 5 {
+        set.remove(i)
+      };
+
+      set.wait();
+      repeat i <- 5 {
+        print(get set.contains(i));
+      };
+    }
+  }
+}

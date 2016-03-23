@@ -1,0 +1,227 @@
+bundle set_div_time where
+import utils
+
+
+
+passive class TimeOp
+  time : int
+  op : bool
+
+  def init(op : bool) : void {
+    this.time = currentTime();
+    this.op = true--op;
+  }
+
+
+
+class DistSet<t>
+  id : int
+  maps : [ActiveHashMap<t, TimeOp>]
+
+  def init(id : int, maps : [ActiveHashMap<t, TimeOp>]) : void {
+    this.id = id;
+    this.maps = maps;
+  }
+
+  def add(elem : t) : void {
+    (this.maps[this.id]).put(elem, new TimeOp(true))
+  }
+
+  def remove(elem : t) : void {
+    (this.maps[this.id]).put(elem, new TimeOp(false))
+  }
+
+  def contains(elem : t) : bool {
+    let
+      futs = new [Fut Maybe TimeOp](|this.maps|)
+      latestAdd = -1
+      latestRemove = -1
+    in {
+
+      repeat i <- |this.maps| {
+          futs[i] = (this.maps[i]).getValue(elem);
+      };
+
+      repeat i <- |this.maps| {
+          match get (futs[i]) with
+          Nothing => ()
+          Just timeOp => {
+            if (timeOp.op == true) then {
+              latestAdd = max(latestAdd, timeOp.time);
+            } else {
+              latestRemove = max(latestRemove, timeOp.time);
+            }
+          }
+      };
+      if (latestAdd == -1) then {
+        false;
+      } else {
+        latestAdd > latestRemove
+      }
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+--public class
+passive class Set<t>
+  distSets : [DistSet<t>]
+  maps : [ActiveHashMap<t, TimeOp>]
+  eq : (t,t) -> bool
+  toInt : (t) -> int
+
+  def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
+    let
+      nc = numcores()
+    in {
+      this.eq = eq;
+      this.toInt = toInt;
+      this.distSets = new [DistSet<t>](nc);
+      this.maps = new [ActiveHashMap<t, TimeOp>](nc);
+      repeat i <- nc {
+        this.maps[i] = new ActiveHashMap<t, TimeOp>(eq, toInt);
+      };
+      repeat i <- nc {
+        this.distSets[i] = new DistSet<t>(i, this.maps);
+      };
+    }
+  }
+
+  def add(elem : t) : void {
+    (this.distSets[core()]).add(elem)
+  }
+
+  def remove(elem : t) : void {
+    (this.distSets[core()]).remove(elem)
+  }
+
+  def contains(elem : t) : Fut bool {
+    (this.distSets[core()]).contains(elem)
+  }
+
+  def wait() : void {
+    repeat i <- |this.distSets| {
+      get (this.distSets[i]).wait();
+      get (this.maps[i]).wait();
+    }
+  }
+
+  --def iterator() : SetIterator<t> {
+    --new SetIterator<t>(this, this.eq, this.toInt)
+  --}
+
+{-class SetIterator<t>
+  hashSet : HashSet<t>
+  buckets : [List<t>]
+  bucket : int
+  i : int
+  endReached : bool
+
+  def init(set : Set<t>, eq : (t, t) -> bool, toInt : (t) -> int) : void {
+    this.hashSet = new HashSet<t>(eq, toInt);
+    repeat s <- |set.maps| {
+      this.hashSet.addAll(set.maps[s])
+    };
+    this.buckets = get this.hashSet.getBuckets();
+    this.bucket = 0;
+    this.i = 0;
+    this.endReached = false;
+  }
+
+  def step() : void {
+    this.i = this.i + 1;
+    if (this.i >= (this.buckets[this.bucket]).size()) then {
+      this.i = 0;
+      this.bucket = this.bucket + 1;
+      if (this.bucket >= |this.buckets|) then {
+        this.endReached = true;
+      }
+    }
+  }
+
+  def next() : Maybe t {
+    let
+      break = false
+    in {
+      while (not break) {
+        if (this.endReached) then {
+          break = true
+        } else if (this.bucket >= |this.buckets|) then {
+          break = true
+        } else if ((this.buckets[this.bucket]).latestOp(this.i) == true) then {
+          break = true
+        };
+        if (not break) then {
+          this.step()
+        }
+      };
+      if (this.endReached) then {
+        Nothing : Maybe t
+      } else {
+        let
+          ret =  Just (this.buckets[this.bucket]).at(this.i)
+        in {
+          this.step();
+          ret
+        }
+      }
+    }
+  } -}
+
+
+class Worker
+  def go(set : Set<int>, start : int, end_ : int) : void {
+    repeat i <- end_ - start + 1 {
+      set.add(start + i);
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+
+class Main {
+  def main() : void {
+    let
+      set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a)
+      workers = new [Worker](1)
+    in {
+      repeat i <- |workers| {
+        workers[i] = new Worker();
+      };
+      repeat i <- |workers| {
+        workers[i]!go(set, i*100, ((i+1) * 100) - 1)
+      };
+      repeat i <- |workers| {
+        get (workers[i]).wait()
+      };
+      set.wait();
+      set.remove(5);
+      set.wait();
+      repeat i <- |workers| * 100 {
+        let
+          c = get set.contains(i)
+        in {
+          if (not c) then {
+            print(i);
+          }
+        }
+      };
+
+      {-let
+        iter = set.iterator()
+        break = false
+      in {
+        while(not break) {
+          match get iter.next() with
+          Nothing => {break = true; print("nothing")}
+          Just a => print("just: {}\n", a)
+        }
+      } -}
+
+    }
+  }
+}

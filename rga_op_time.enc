@@ -1,0 +1,316 @@
+bundle rga_op_time where
+import utils
+
+
+passive class NodeID
+  time : int
+  localRGAid : int
+  uid : int --locally unique if two local nodes has same time
+
+  def init(id : int, uid : int, special : bool) : void {
+    if (special) then {
+      this.time = -1;
+      this.localRGAid = -1;
+    } else {
+      this.time = currentTime();
+      this.localRGAid = id;
+    };
+    this.uid = uid;
+  }
+
+  def lessThan(other : NodeID) : bool {
+    if (this.time >= other.time) then {
+      false
+    } else if (this.localRGAid >= other.localRGAid) then {
+      false
+    } else if (this.uid >= other.uid) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def equals(other : NodeID) : bool {
+    (this.time == other.time) and (this.localRGAid == other.localRGAid) and (this.uid == other.uid)
+  }
+
+  def toInt() : int {
+    ((31 * this.time) * 31 + this.localRGAid) * 31 + this.uid
+  }
+
+passive class RGANode<t>
+  next : RGANode<t>
+  prev : RGANode<t>
+  removed : bool
+  elem : t
+  nodeID : NodeID
+
+  def init(nodeID : NodeID) : void {
+    this.nodeID = nodeID;
+    this.removed = false;
+    this.next = null;
+    this.prev = null;
+  }
+
+  def setup(elem : t) : void {
+    this.elem = elem;
+  }
+
+  def update(elem : t, time : NodeID) : void {
+    if ((not this.removed) and (this.nodeID.lessThan(time))) then {
+      this.nodeID = time;
+      this.elem = elem
+    }
+  }
+
+class LocalRGA<t>
+  localRGAs : [LocalRGA<t>]
+  id : int
+  firstNode : RGANode<t>
+  lastNode : RGANode<t>
+  hashMap : HashMap<NodeID, RGANode<t>>
+  size : int
+  nodeCounter : int
+
+  def init(id : int) : void {
+    this.nodeCounter = -1;
+    this.id = id;
+
+    this.lastNode = new RGANode<t>(new NodeID(this.id, this.nextNodeID(), true));
+    this.lastNode.removed = true;
+    this.lastNode.next = null : RGANode<t>;
+
+    this.firstNode = new RGANode<t>(new NodeID(this.id, this.nextNodeID(), true));
+    this.firstNode.removed = true;
+    this.firstNode.next = this.lastNode;
+
+    this.lastNode.prev = this.firstNode;
+
+    let eq = \(a : NodeID, b : NodeID) -> (a.equals(b));
+    let toInt = \(a : NodeID) -> (a.toInt());
+    this.hashMap = new HashMap<NodeID, RGANode<t>>(eq, toInt);
+    this.hashMap.put(this.firstNode.nodeID, this.firstNode);
+    this.hashMap.put(this.lastNode.nodeID, this.lastNode);
+  }
+
+  def setup(localRGAs : [LocalRGA<t>]) : void {
+    this.localRGAs = localRGAs;
+  }
+
+  def nextNodeID() : int {
+    this.nodeCounter = this.nodeCounter + 1;
+    this.nodeCounter;
+  }
+
+  def append(elem : t) : NodeID {
+    this.addAfter(this.lastNode.prev.nodeID, elem)
+  }
+
+  def addAfter(index : NodeID, elem : t) : NodeID {
+    match this.hashMap.getValue(index) with
+    Nothing => {
+      exitMsg("Illegal index in add in LocalRGA");
+      null : NodeID
+    }
+    Just node => {
+      let left = node;
+      let right = left.next;
+      let newNodeId = new NodeID(this.id, this.nextNodeID(), false);
+      repeat i <- |this.localRGAs|{
+        (this.localRGAs[i]).addDownstream(left.nodeID, right.nodeID, elem, newNodeId)
+      };
+      newNodeId;
+    }
+  }
+
+  def addDownstream(left : NodeID, right : NodeID, elem : t, newNodeId : NodeID) : void {
+    match this.hashMap.getValue(left) with
+    Nothing => exitMsg("problem in addDownstream in LocalRGA")
+    Just a => let leftNode = a in {
+      let rightNode = leftNode.next;
+      let break = false;
+      while(not break) {
+        if ((newNodeId.lessThan(rightNode.nodeID)) or (rightNode.nodeID.equals(right))) then {
+          let node = new RGANode<t>(newNodeId);
+          leftNode.next = node;
+          node.next = rightNode;
+          node.prev = leftNode;
+          rightNode.prev = node;
+          this.hashMap.put(node.nodeID, node);
+          this.size = this.size + 1;
+          break = true;
+        };
+        if (not break) then {
+          rightNode = rightNode.next;
+        }
+      }
+    }
+  }
+
+  def remove(index : NodeID) : void {
+    repeat i <- |this.localRGAs|{
+      (this.localRGAs[i]).removeDownstream(index)
+    }
+  }
+
+  def removeDownstream(index : NodeID) : void {
+    match this.hashMap.getValue(index) with
+    Nothing => exitMsg("node does not exist in removeDownstream in LocalRGA")
+    Just rgaNode => {
+      if (not rgaNode.removed) then {
+          rgaNode.removed = true;
+          this.size = this.size - 1;
+      }
+    }
+  }
+
+  def set(index : NodeID, elem : t) : void {
+    repeat i <- |this.localRGAs|{
+      (this.localRGAs[i]).setDownstream(index, elem)
+    }
+  }
+
+  def setDownstream(index : NodeID, elem : t) : void {
+    match  this.hashMap.getValue(index) with
+    Nothing => exitMsg("illegal index in setDownstream in LocalRGA")
+    Just node => {
+      if (node.removed) then {
+        exitMsg("index is removed in setDownstream in LocalRGA"); -- TODO this might not be an error, if concurrent set and remove with earlier set
+      } else {
+        exitMsg("set not supported RGA")-- TODO how to make this commute both with removes and other sets
+      }
+    }
+  }
+
+  def at(index : NodeID) : Maybe t {
+    match  this.hashMap.getValue(index) with
+    Nothing => {
+      exitMsg("illegal index in at in LocalRGA");
+      Nothing : Maybe t --This line should not be reached, but needed to make the return type ok
+    }
+    Just node => {
+        if (node.removed) then {
+          Nothing : Maybe t
+        } else {
+          Just node.elem
+        }
+    }
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def iterator() : RGAIterator<t> {
+    new RGAIterator<t>(this.firstNode, this.lastNode)
+  }
+
+  def iteratorUnordered() : RGAIteratorUnordered<t> {
+    new RGAIteratorUnordered<t>(this.hashMap)
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class RGA<t>
+  localRGAs : [LocalRGA<t>]
+
+  def init() : void {
+    this.localRGAs = new [LocalRGA<t>](numcores());
+    repeat i <- |this.localRGAs| {
+      this.localRGAs[i] = new LocalRGA<t>(i)
+    };
+    repeat i <- |this.localRGAs| {
+      (this.localRGAs[i]).setup(this.localRGAs)
+    }
+  }
+
+  def append(elem : t) : Fut NodeID {
+    (this.localRGAs[core()]).append(elem)
+  }
+
+  def addAfter(index : NodeID, elem : t) : Fut NodeID {
+    (this.localRGAs[core()]).addAfter(index, elem)
+  }
+
+  def set(index : NodeID, elem : t) : void {
+    (this.localRGAs[core()]).set(index, elem)
+  }
+
+  def remove(index : NodeID) : void {
+    (this.localRGAs[core()]).remove(index)
+  }
+
+  def at(index : NodeID) : Fut Maybe t {
+    (this.localRGAs[core()]).at(index)
+  }
+
+  def size() : Fut int {
+    (this.localRGAs[core()]).size()
+  }
+
+  def iterator() : Fut RGAIterator<t> {
+    (this.localRGAs[core()]).iterator()
+  }
+
+  def iteratorUnordered() : Fut RGAIteratorUnordered<t> {
+    (this.localRGAs[core()]).iteratorUnordered()
+  }
+
+  def wait() : void {
+    repeat i <- |this.localRGAs| { -- all local have sent their messages
+      (this.localRGAs[i]).wait()
+    };
+    repeat i <- |this.localRGAs| { -- all local have processes their messages
+      (this.localRGAs[i]).wait()
+    };
+  }
+
+
+passive class RGAIterator<t>
+  current : RGANode<t>
+  last : RGANode<t>
+  endReached : bool
+  def init(first : RGANode<t>, last : RGANode<t>) : void {
+    this.current = first;
+    this.last = last;
+    this.endReached = false;
+  }
+
+  def next() : Maybe (t, NodeID) {
+    if (this.current.nodeID.equals(this.last.nodeID)) then {
+      Nothing : Maybe (t, NodeID)
+    } else {
+      this.current = this.current.next;
+      if (this.current.removed) then {
+        this.next()
+      } else {
+        Just (this.current.elem, this.current.nodeID)
+      }
+    }
+  }
+
+passive class RGAIteratorUnordered<t>
+  hashMapIterator : HashMapIterator<NodeID, RGANode<t>>
+  def init(hashMap : HashMap<NodeID, RGANode<t>>) : void {
+    this.hashMapIterator = hashMap.iterator()
+  }
+
+  def next() : Maybe (t, NodeID) {
+    match this.hashMapIterator.next() with
+    Nothing => Nothing : Maybe (t, NodeID)
+    Just entry => {
+      if (entry.value.removed) then {
+        this.next()
+      } else {
+        Just (entry.value.elem, entry.value.nodeID)
+      }
+    }
+  }
+
+{- class Main {
+  def main() : void {
+    ()
+  }
+} -}

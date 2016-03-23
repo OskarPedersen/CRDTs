@@ -1,0 +1,9 @@
+import set_div_time
+--import set_op_or
+
+class Main {
+  def main() : void {
+    let set = new Set<int>();
+    
+  }
+}
