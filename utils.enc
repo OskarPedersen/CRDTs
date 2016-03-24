@@ -464,6 +464,36 @@ passive class HashSetIterator<t>
     Just entry => Just entry.key
   }
 
+class ActiveHashSet<t>
+  hashSet : HashSet<t>
+
+  def init(eq : (t, t) -> bool, toInt : (t) -> int) : void {
+    this.hashSet = new HashSet<t>(eq, toInt)
+  }
+
+  def add(elem : t) : void {
+    this.hashSet.add(elem)
+  }
+
+  def remove(elem : t) : void {
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet<t>) : void {
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : t) : bool {
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.hashSet.size()
+  }
+
+  def wait() : void {
+    ()
+  }
 
 {-class not_Main {
   def main() : void {

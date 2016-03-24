@@ -1,8 +1,8 @@
---import set_div_time
-import set_op_or
+import set_div_time
+--import set_op_or
 
 class Worker
-  def go(set : Set<int>, start : int, end_ : int) : void {
+  def go(set : ActiveHashSet<int>, start : int, end_ : int) : void {
     repeat i <- end_ - start + 1 {
       set.add(start + i);
     };
@@ -15,9 +15,10 @@ class Worker
 
   class Main {
     def main() : void {
-      let set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a);
-      let workers = new [Worker](6);
-      let num = 100;
+      tic();
+      let set = new ActiveHashSet<int>(\(a : int, b : int) -> a == b, \(a : int) -> a);
+      let workers = new [Worker](4);
+      let num = 300000;
       repeat i <- |workers| {
         workers[i] = new Worker();
       };
@@ -33,16 +34,14 @@ class Worker
       --set.remove(555);
       --set.remove(5555);
       set.wait();
-      repeat i <- |workers| * num {
-        let
-          c = get set.contains(i)
-        in {
-          --print("i: {}\n", i);
-          if (not c) then {
-            print("Missing: {}\n", i);
-          }
+      repeat i <- 10 { --|workers| * num {
+        let c = get set.contains(i);
+        --print("i: {}\n", i);
+        if (not c) then {
+          print("Missing: {}\n", i);
         }
       };
+      print(toc());
 
       {-let
         iter = set.iterator()

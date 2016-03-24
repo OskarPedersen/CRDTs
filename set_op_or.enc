@@ -66,11 +66,12 @@ class LocalSet<t>
     }
     Just set => {
       if (set.size() > 0) then {
+        let clone = set.clone();
         repeat i <- |this.localSets| {
           if (i == this.setID) then {
-            this.removeDownstream(elem, set)
+            this.removeDownstream(elem, clone)
           } else {
-            this.localSets[i]!removeDownstream(elem, set) -- TODO is clone necessary here?
+            this.localSets[i]!removeDownstream(elem, clone)
           }
         }
       }
@@ -130,7 +131,7 @@ passive class Set<t>
 
   def wait() : void {
     repeat i <- |this.localSets| {
-      (this.localSets[i]).wait()
+      get (this.localSets[i]).wait()
     }
   }
 
