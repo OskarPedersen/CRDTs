@@ -9,7 +9,7 @@ passive class TimeOp
 
   def init(op : bool) : void {
     this.time = currentTime();
-    this.op = true--op;
+    this.op = op;
   }
 
 
@@ -169,59 +169,3 @@ passive class Set<t>
       }
     }
   } -}
-
-
-class Worker
-  def go(set : Set<int>, start : int, end_ : int) : void {
-    repeat i <- end_ - start + 1 {
-      set.add(start + i);
-    }
-  }
-
-  def wait() : void {
-    ()
-  }
-
-
-class Main {
-  def main() : void {
-    let
-      set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a)
-      workers = new [Worker](1)
-    in {
-      repeat i <- |workers| {
-        workers[i] = new Worker();
-      };
-      repeat i <- |workers| {
-        workers[i]!go(set, i*100, ((i+1) * 100) - 1)
-      };
-      repeat i <- |workers| {
-        get (workers[i]).wait()
-      };
-      set.wait();
-      set.remove(5);
-      set.wait();
-      repeat i <- |workers| * 100 {
-        let
-          c = get set.contains(i)
-        in {
-          if (not c) then {
-            print(i);
-          }
-        }
-      };
-
-      {-let
-        iter = set.iterator()
-        break = false
-      in {
-        while(not break) {
-          match get iter.next() with
-          Nothing => {break = true; print("nothing")}
-          Just a => print("just: {}\n", a)
-        }
-      } -}
-
-    }
-  }
-}

@@ -10,12 +10,17 @@ class LocalSet<t>
 
   intEq : (int, int) -> bool
   intToInt : (int) -> int
+  toInt : (t) -> int
 
-  def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
+  setID : int
+
+  def init(eq : (t,t) -> bool, toInt : (t) -> int, setID : int) : void {
     this.idCounter = -1;
     this.hashMap = new HashMap<t, HashSet<int>>(eq, toInt);
     this.intEq = \(a : int, b : int) -> a == b;
     this.intToInt = \(a : int) -> a;
+    this.toInt = toInt;
+    this.setID = setID
   }
 
   def setup(localSets : [LocalSet<t>], idUpper : int, idLower : int) : void {
@@ -29,7 +34,11 @@ class LocalSet<t>
       id = this.nextID()
     in {
       repeat i <- |this.localSets| {
-        this.localSets[i]!addDownstream(elem, id)
+        if (i == this.setID) then {
+          this.addDownstream(elem, id)
+        } else {
+          this.localSets[i]!addDownstream(elem, id)
+        }
       }
     }
   }
@@ -58,7 +67,11 @@ class LocalSet<t>
     Just set => {
       if (set.size() > 0) then {
         repeat i <- |this.localSets| {
-          this.localSets[i]!removeDownstream(elem, set) -- TODO Clone set before sending it away!!!
+          if (i == this.setID) then {
+            this.removeDownstream(elem, set)
+          } else {
+            this.localSets[i]!removeDownstream(elem, set) -- TODO is clone necessary here?
+          }
         }
       }
     }
@@ -96,7 +109,7 @@ passive class Set<t>
   def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
     this.localSets = new [LocalSet<t>](numcores());
     repeat i <- |this.localSets| {
-      this.localSets[i] = new LocalSet<t>(eq, toInt)
+      this.localSets[i] = new LocalSet<t>(eq, toInt, i)
     };
     repeat i <- |this.localSets| {
       (this.localSets[i]).setup(this.localSets,  |this.localSets|,  i)
@@ -167,7 +180,7 @@ passive class SetIterator<t>
   }
 
 
-class Main {
+{- class Main {
   def main() : void {
     let
       set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a)
@@ -185,4 +198,4 @@ class Main {
       };
     }
   }
-}
+} -}

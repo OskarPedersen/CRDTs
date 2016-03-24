@@ -145,7 +145,7 @@ passive class List<t>
 
   def boundsCheck(i : int) : void {
     if ((i < 0) or (i >= this.size)) then {
-      exitMsg("Index out of bounds.");
+      exitMsg("Index out of bounds");
     }
   }
 
@@ -190,7 +190,7 @@ passive class HashMap<k, v>
         }
       };
       if (exists == false) then {
-        this.buckets.at(this.hash(key)).add(new HashMapEntry<k, v>(key, value));
+        this.buckets.at(bucket).add(new HashMapEntry<k, v>(key, value));
         this.items = this.items + 1;
         if (this.items * this.loadFactor >= this.buckets.size()) then {
           this.grow();
@@ -283,7 +283,7 @@ passive class HashMap<k, v>
         if (this.equals(this.buckets.at(bucket).at(i).key, key)) then {
           this.buckets.at(bucket).remove(i);
           this.items = this.items - 1;
-          i = this.buckets.at(bucket).size() --break
+          i = this.buckets.at(bucket).size() + 1 --break
         }
       };
     }
@@ -296,14 +296,22 @@ passive class HashMap<k, v>
     in {
       while (not break) {
         match iter.next() with
-          Just key => this.remove(key)
-          Nothing => break = true
+          Just key => { this.remove(key) }
+          Nothing => { break = true }
       }
     }
   }
 
   def iterator() : HashMapIterator<k, v> {
     new HashMapIterator<k, v>(this)
+  }
+
+  def getEq() : (k, k) -> bool {
+    this.eq
+  }
+
+  def getToInt() : (k) -> int {
+    this.toInt
   }
 
 passive class HashMapIterator<k, v>
@@ -314,18 +322,27 @@ passive class HashMapIterator<k, v>
 
   def init(hashMap : HashMap<k, v>) : void {
     this.hashMap = hashMap;
-    this.bucket = -1;
+    this.bucket = 0; -- -1
     this.i = -1;
     this.endReached = false;
   }
 
   def step() : void {
-    this.i = this.i + 1;
-    if (this.i >= this.hashMap.buckets.at(this.bucket).size()) then {
-      this.i = 0;
-      this.bucket = this.bucket + 1;
-      if (this.bucket >= this.hashMap.buckets.size()) then {
-        this.endReached = true;
+    let break = false;
+    while (not break) {
+      this.i = this.i + 1;
+      if (this.i >= this.hashMap.buckets.at(this.bucket).size()) then {
+        this.i = 0; --0
+        this.bucket = this.bucket + 1;
+        if (this.bucket >= this.hashMap.buckets.size()) then {
+          this.endReached = true;
+          break = true;
+        }
+      };
+      if ((not this.endReached)) then {
+          if (this.i < this.hashMap.buckets.at(this.bucket).size()) then {
+            break = true
+          };
       }
     }
   }
@@ -415,6 +432,22 @@ passive class HashSet<t>
 
   def iterator() : HashSetIterator<t> {
     new HashSetIterator<t>(this)
+  }
+
+  def addAll(set : HashSet<t>) : void {
+    let break = false;
+    let iter = set.iterator();
+    while (not break) {
+      match iter.next() with
+      Nothing => break = true
+      Just elem => this.add(elem);
+    }
+  }
+
+  def clone() : HashSet<t> {
+    let set = new HashSet<t>(this.hashMap.getEq(), this.hashMap.getToInt());
+    set.addAll(this);
+    set
   }
 
 passive class HashSetIterator<t>

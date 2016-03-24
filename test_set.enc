@@ -1,9 +1,58 @@
-import set_div_time
---import set_op_or
+--import set_div_time
+import set_op_or
 
-class Main {
-  def main() : void {
-    let set = new Set<int>();
-    
+class Worker
+  def go(set : Set<int>, start : int, end_ : int) : void {
+    repeat i <- end_ - start + 1 {
+      set.add(start + i);
+    };
+    --set.remove(5);
   }
-}
+
+  def wait() : void {
+    ()
+  }
+
+  class Main {
+    def main() : void {
+      let set = new Set<int>(\(a : int, b : int) -> a == b, \(a : int) -> a);
+      let workers = new [Worker](6);
+      let num = 100;
+      repeat i <- |workers| {
+        workers[i] = new Worker();
+      };
+      repeat i <- |workers| {
+        workers[i]!go(set, i*num, ((i+1) * num) - 1)
+      };
+      repeat i <- |workers| {
+        get (workers[i]).wait()
+      };
+      set.wait();
+      set.remove(5);
+      --set.remove(55);
+      --set.remove(555);
+      --set.remove(5555);
+      set.wait();
+      repeat i <- |workers| * num {
+        let
+          c = get set.contains(i)
+        in {
+          --print("i: {}\n", i);
+          if (not c) then {
+            print("Missing: {}\n", i);
+          }
+        }
+      };
+
+      {-let
+        iter = set.iterator()
+        break = false
+      in {
+        while(not break) {
+          match get iter.next() with
+          Nothing => {break = true; print("nothing")}
+          Just a => print("just: {}\n", a)
+        }
+      } -}
+    }
+  }
