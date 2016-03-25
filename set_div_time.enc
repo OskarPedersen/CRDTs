@@ -1,7 +1,4 @@
 bundle set_div_time where
-import utils
-
-
 
 passive class TimeOp
   time : int
@@ -11,8 +8,6 @@ passive class TimeOp
     this.time = currentTime();
     this.op = op;
   }
-
-
 
 class DistSet<t>
   id : int
@@ -66,7 +61,7 @@ class DistSet<t>
   }
 
 --public class
-passive class Set<t>
+passive class DivTimeSet<t>
   distSets : [DistSet<t>]
   maps : [ActiveHashMap<t, TimeOp>]
   eq : (t,t) -> bool

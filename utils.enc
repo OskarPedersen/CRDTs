@@ -472,7 +472,7 @@ class ActiveHashSet<t>
   }
 
   def add(elem : t) : void {
-    this.hashSet.add(elem)
+    this.hashSet.add(elem); 
   }
 
   def remove(elem : t) : void {

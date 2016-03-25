@@ -1,5 +1,4 @@
 bundle set_op_or where
-import utils
 
 class LocalSet<t>
   localSets : [LocalSet<t>]
@@ -105,7 +104,7 @@ class LocalSet<t>
     this.hashMap
   }
 
-passive class Set<t>
+passive class OpOrSet<t>
   localSets : [LocalSet<t>]
   def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
     this.localSets = new [LocalSet<t>](numcores());

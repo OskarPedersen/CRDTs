@@ -1,0 +1,60 @@
+import all
+
+def eq(a : int, b : int) : bool {
+  a == b
+}
+
+def intToInt(a : int) : int {
+  a
+}
+
+class Worker<s>
+  def go(adds : int, set : s, add : (s, int) -> void) : void {
+    repeat i <- adds {
+      add(set, i)
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class Runner<s>
+  def init(set : s, name : String, adds : int, add : (s, int) -> void, wait : (s) -> void) : void {
+    let workers = new [Worker<s>](4);
+    repeat i <- |workers| {
+      workers[i] = new Worker<s>()
+    };
+
+    tic();
+    repeat i <- |workers| {
+      (workers[i])!go(adds, set, add)
+    };
+    repeat i <- |workers| {
+      get (workers[i]).wait()
+    };
+    wait(set);
+    print("{}: {} ms\n", name, toc());
+  }
+
+class Main
+  def main() : void {
+    let runs = 1;
+    let adds = 100000;
+    let workers = 4;
+
+    let hashSetAdd = \(hs : ActiveHashSet<int>, elem : int) -> {hs.add(elem); ()};
+    let hashSetWait = \(hs : ActiveHashSet<int>) -> {get hs.wait(); ()};
+
+    let divTimeAdd = \(dts : DivTimeSet<int>, elem : int) -> dts.add(elem);
+    let divTimeWait = \(dts : DivTimeSet<int>) -> dts.wait();
+
+    let opOrAdd = \(oos : OpOrSet<int>, elem : int) -> oos.add(elem);
+    let opOrWait = \(oos : OpOrSet<int>) -> oos.wait();
+    repeat i <- runs {
+      new Runner<ActiveHashSet<int>>(new ActiveHashSet<int>(eq, intToInt), "HashSet", adds, hashSetAdd, hashSetWait);
+      new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait);
+      new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait);
+
+    }
+  }
