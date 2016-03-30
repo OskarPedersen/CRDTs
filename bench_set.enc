@@ -9,9 +9,12 @@ def intToInt(a : int) : int {
 }
 
 class Worker<s>
-  def go(adds : int, set : s, add : (s, int) -> void) : void {
-    repeat i <- adds {
+  def go(adds : int, set : s, add : (s, int) -> void, contains : (s, int) -> void) : void {
+    repeat i <- adds / 100 {
       add(set, i)
+    };
+    repeat i <- adds {
+      contains(set, i)
     }
   }
 
@@ -20,7 +23,7 @@ class Worker<s>
   }
 
 passive class Runner<s>
-  def init(set : s, name : String, adds : int, add : (s, int) -> void, wait : (s) -> void) : void {
+  def init(set : s, name : String, adds : int, add : (s, int) -> void, wait : (s) -> void, contains : (s, int) -> void) : void {
     let workers = new [Worker<s>](4);
     repeat i <- |workers| {
       workers[i] = new Worker<s>()
@@ -28,7 +31,7 @@ passive class Runner<s>
 
     tic();
     repeat i <- |workers| {
-      (workers[i])!go(adds, set, add)
+      (workers[i])!go(adds, set, add, contains)
     };
     repeat i <- |workers| {
       get (workers[i]).wait()
@@ -45,16 +48,20 @@ class Main
 
     let hashSetAdd = \(hs : ActiveHashSet<int>, elem : int) -> {hs.add(elem); ()};
     let hashSetWait = \(hs : ActiveHashSet<int>) -> {get hs.wait(); ()};
+    let hashSetContains = \(hs : ActiveHashSet<int>, elem : int) -> {hs.contains(elem); ()};
 
     let divTimeAdd = \(dts : DivTimeSet<int>, elem : int) -> dts.add(elem);
     let divTimeWait = \(dts : DivTimeSet<int>) -> dts.wait();
+    let divTimeContains = \(dts : DivTimeSet<int>, elem : int) -> {dts.contains(elem); ()};
 
     let opOrAdd = \(oos : OpOrSet<int>, elem : int) -> oos.add(elem);
     let opOrWait = \(oos : OpOrSet<int>) -> oos.wait();
+    let opOrContains = \(oos : OpOrSet<int>, elem : int) -> {oos.contains(elem); ()};
+
     repeat i <- runs {
-      new Runner<ActiveHashSet<int>>(new ActiveHashSet<int>(eq, intToInt), "HashSet", adds, hashSetAdd, hashSetWait);
-      new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait);
-      new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait);
+      new Runner<ActiveHashSet<int>>(new ActiveHashSet<int>(eq, intToInt), "HashSet", adds, hashSetAdd, hashSetWait, hashSetContains);
+      new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait, divTimeContains);
+      new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait, opOrContains);
 
     }
   }

@@ -11,14 +11,24 @@ class WriterSequential
 
 class ReaderSum
   def go(rga : RGA<int>, r : int, w : int, orderedIter : bool) : void {
-    repeat i <- 10 {
-      let iter = if (orderedIter) then get rga.iterator() else null;
-      let uiter = if (not orderedIter) then get rga.iteratorUnordered() else null;
-      let break = false;
+     repeat i <- 10 {
+      let iter = if (orderedIter) then {
+                   get rga.iterator()
+                } else  {
+                  null : RGAIterator<int>
+                };
+      let uiter = if (not orderedIter) then {
+                    get rga.iteratorUnordered()
+                  } else {
+                    null : RGAIteratorUnordered<int>
+                  };
+      let break = true;
       let c = 0;
       while (not break) {
-        match if(orderedIter) then iter.next() else uiter.next() with
-        Nothing => break = true
+        match if(orderedIter) then { iter.next() } else { uiter.next() } with
+        Nothing => {
+          break = true
+        }
         Just (elem, id) => {
           if (elem == r) then {
             c = c + 1
@@ -97,13 +107,13 @@ class Main {
     let rga = new RGA<int>();
     let r1 = randomSeq(50, 0, 10000, 967483);
     let r2 = randomSeq(50, 0, 10000, 634523);
-    let waits = new [Fut void](5);
+    let waits = new [Fut void](2);
     tic();
     waits[0] = (new WriterSequential()).go(rga, 1);
-    waits[1] = (new ReaderSum()).go(rga, 1, 10, false);
-    waits[2] = (new ReaderSum()).go(rga, 1, 11, true);
-    waits[3] = (new WriterRandom()).go(rga, r1, 2, false);
-    waits[4] = (new WriterRandom()).go(rga, r1, 3, true);
+    waits[1] = (new ReaderSum()).go(rga, 1, 8, true);
+    --waits[2] = (new ReaderSum()).go(rga, 1, 9, false);
+    --waits[3] = (new WriterRandom()).go(rga, r1, 2, false);
+    --waits[4] = (new WriterRandom()).go(rga, r1, 3, true);
 
     repeat i <- |waits| {
       get waits[i]
@@ -114,9 +124,11 @@ class Main {
     let break = false;
     while (not break) {
       match iter.next() with
-      Nothing => break = true
+      Nothing => {
+        break = true
+      }
       Just (elem, id) => {
-        print(elem);
+        print("{}", elem);
       }
     }
   }

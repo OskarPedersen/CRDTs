@@ -12,12 +12,10 @@ embed
 
 body
 
-  // TODO error handling
   int c_core() {
     return sched_getcpu();
   }
 
-  // TODO error handling
   int c_numcores() {
     return sysconf(_SC_NPROCESSORS_ONLN);
   }
@@ -60,7 +58,12 @@ def randomSeq(len : int, min : int, max : int, seed : int) : [int] {
 }
 
 def core() : int {
-  embed int c_core(); end
+  let c = embed int c_core(); end;
+  if (c == -1) then {
+    exitMsg("sched_getcpu() returned -1");
+  };
+  c
+
 }
 
 def numcores() : int {
@@ -89,7 +92,7 @@ def currentTime() : int {
 
 def exitMsg(msg : String) : void {
   print("Error: {}. Exiting.\n", msg);
-  embed void exit(0); end
+  embed void exit(EXIT_FAILURE); end
 }
 
 passive class List<t>
@@ -236,11 +239,10 @@ passive class HashMap<k, v>
   }
 
   def hash(key : k) : int {
-    let
-      toInt = this.toInt
-    in {
-      toInt(key) % this.buckets.size()
-    }
+    let toInt = this.toInt;
+    let h = toInt(key);
+    h % this.buckets.size()
+
   }
 
   def getBuckets() : List<List<HashMapEntry<k, v>>> {
@@ -472,7 +474,7 @@ class ActiveHashSet<t>
   }
 
   def add(elem : t) : void {
-    this.hashSet.add(elem); 
+    this.hashSet.add(elem);
   }
 
   def remove(elem : t) : void {

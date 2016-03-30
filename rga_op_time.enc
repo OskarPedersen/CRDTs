@@ -9,8 +9,8 @@ passive class NodeID
 
   def init(id : int, uid : int, special : bool) : void {
     if (special) then {
-      this.time = -1;
-      this.localRGAid = -1;
+      this.time = 0;
+      this.localRGAid = 0;
     } else {
       this.time = currentTime();
       this.localRGAid = id;
@@ -126,12 +126,14 @@ class LocalRGA<t>
   def addDownstream(left : NodeID, right : NodeID, elem : t, newNodeId : NodeID) : void {
     match this.hashMap.getValue(left) with
     Nothing => exitMsg("problem in addDownstream in LocalRGA")
-    Just a => let leftNode = a in {
+    Just a => {
+      let leftNode = a;
       let rightNode = leftNode.next;
       let break = false;
       while(not break) {
         if ((newNodeId.lessThan(rightNode.nodeID)) or (rightNode.nodeID.equals(right))) then {
           let node = new RGANode<t>(newNodeId);
+          node.setup(elem);
           leftNode.next = node;
           node.next = rightNode;
           node.prev = leftNode;
@@ -219,11 +221,12 @@ passive class RGA<t>
   def init() : void {
     this.localRGAs = new [LocalRGA<t>](numcores());
     repeat i <- |this.localRGAs| {
-      this.localRGAs[i] = new LocalRGA<t>(i)
+        this.localRGAs[i] = new LocalRGA<t>(i)
     };
+    this.wait(); --TODO do we need to wait here?
     repeat i <- |this.localRGAs| {
       (this.localRGAs[i]).setup(this.localRGAs)
-    }
+    };
   }
 
   def append(elem : t) : Fut NodeID {
@@ -260,10 +263,10 @@ passive class RGA<t>
 
   def wait() : void {
     repeat i <- |this.localRGAs| { -- all local have sent their messages
-      (this.localRGAs[i]).wait()
+      get (this.localRGAs[i]).wait()
     };
-    repeat i <- |this.localRGAs| { -- all local have processes their messages
-      (this.localRGAs[i]).wait()
+    repeat i <- |this.localRGAs| { -- all local have processed their messages
+      get (this.localRGAs[i]).wait()
     };
   }
 
