@@ -1,0 +1,36 @@
+import all
+import test_utils
+
+def test_basics(test : Test) : void {
+  let list = new List<int>();
+  test.assert(list.size() == 0, "initially empty");
+
+  list.add(3);
+
+  test.assert(list.at(0) == 3, "contains 1");
+  test.assert(list.size() == 1, "size 1");
+
+  list.add(4);
+
+  test.assert(list.at(0) == 3, "elem 0 = 3");
+  test.assert(list.at(1) == 4, "elem 1 = 4");
+  test.assert(list.size() == 2, "size 2");
+
+  list.set(0, 5);
+
+  test.assert(list.at(0) == 5, "elem 0 = 5");
+  test.assert(list.at(1) == 4, "elem 1 unchanged");
+  test.assert(list.size() == 2, "size unchanged");
+
+  list.remove(0);
+
+  test.assert(list.at(0) == 4, "elem 0 removed");
+  test.assert(list.size() == 1, "size shrunk");
+}
+
+class Main {
+  def main() : void {
+    let module = "List";
+    test_basics(new Test(module, "basics"));
+  }
+}

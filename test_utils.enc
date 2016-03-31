@@ -1,0 +1,19 @@
+bundle test_utils where
+
+passive class Test
+  module : String
+  test : String
+
+  def init(module : String, test : String) : void {
+    this.module = module;
+    this.test = test;
+    print("\n--- {} | {} ---\n", module, test);
+  }
+
+  def assert(b : bool, desc : String) : void {
+    if (not b) then {
+      print("\nFailed: {}\n", desc);
+    } else {
+      print("{}", ".");
+    }
+  }

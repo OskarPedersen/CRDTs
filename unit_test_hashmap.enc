@@ -1,0 +1,79 @@
+import all
+import test_utils
+
+def test_basics(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let hashMap = new HashMap<int, int>(eq, toInt);
+
+  test.assert(hashMap.size() == 0, "intially empty");
+
+  hashMap.put(2, 4);
+
+  test.assert(hashMap.size() == 1, "size 1");
+  test.assert(match hashMap.getValue(2) with Nothing => false Just a => a == 4,
+    "get 2 = 4");
+
+  hashMap.put(3, 9);
+
+  test.assert(hashMap.size() == 2, "size 2");
+  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 9,
+   "get 3 = 9");
+
+  hashMap.remove(2);
+
+  test.assert(hashMap.size() == 1, "size decreased to 1");
+  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 9,
+   "get 2 unchanged");
+
+  hashMap.put(3, 10);
+
+  test.assert(hashMap.size() == 1, "size unchanged");
+  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 10,
+   "value updated");
+  test.assert(match hashMap.getValue(123) with Nothing => true Just a => false,
+   "Non added value");
+}
+
+
+def test_iterator(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let hashMap = new HashMap<int, int>(eq, toInt);
+  let emptyIter = hashMap.iterator();
+
+  test.assert(match emptyIter.next() with Noting => true Just a => false,
+   "empty iterator");
+
+  hashMap.put(1, 1);
+  hashMap.put(2, 4);
+  hashMap.put(3, 9);
+  hashMap.put(4, 16);
+  let iter = hashMap.iterator();
+  let tmpres = new [int](5);
+  let unitialized = -1;
+  repeat i <- |tmpres| {
+    tmpres[i] = unitialized;
+  };
+  let break = false;
+  while (not break) {
+    match iter.next() with
+    Nothing => break = true
+    Just entry => tmpres[entry.key] = entry.value;
+  };
+  repeat i <- |tmpres| {
+    if (tmpres[i] != unitialized) then {
+      test.assert(tmpres[i] == i * i, "iter assertion")
+    }
+  }
+
+
+}
+
+class Main {
+  def main() : void {
+    let module = "HashMap";
+    test_basics(new Test(module, "basics"));
+    test_iterator(new Test(module, "iterator"));
+  }
+}
