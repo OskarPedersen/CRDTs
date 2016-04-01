@@ -7,7 +7,7 @@ passive class Test
   def init(module : String, test : String) : void {
     this.module = module;
     this.test = test;
-    print("\n--- {} | {} ---\n", module, test);
+    print("\n{} | {}\n", module, test);
   }
 
   def assert(b : bool, desc : String) : void {

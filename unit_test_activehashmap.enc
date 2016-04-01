@@ -1,0 +1,67 @@
+import all
+import test_utils
+
+
+def test_singleuse(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let ahm = new ActiveHashMap<int, int>(eq, toInt);
+
+  test.assert((get ahm.size()) == 0, "Initially empty");
+
+  get ahm.put(1, 10);
+
+  test.assert((get ahm.size()) == 1, "Size increased by 1");
+  test.assert(match (get ahm.getValue(1)) with Nothing => false Just v => v == 10,
+   "put get");
+}
+
+def test_oneadder(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let ahm = new ActiveHashMap<int, int>(eq, toInt);
+  let worker = new Adder(ahm, 0);
+  get worker.wait();
+  get ahm.wait();
+
+  test.assert((get ahm.size()) == 1000, "All adds arrived");
+
+}
+
+def test_manyadders(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let ahm = new ActiveHashMap<int, int>(eq, toInt);
+  test.assert((get ahm.size()) == 0, "Initially empty");
+  let workers = 10;
+  let w = new [Adder](workers);
+  repeat i <- workers {
+    w[i] = new Adder(ahm, i * 100)
+  };
+  repeat i <- workers {
+    get (w[i]).wait()
+  };
+  get ahm.wait();
+  print((get ahm.size()));
+  test.assert((get ahm.size()) ==  2000, "Correct size");
+}
+
+class Adder
+  def init(ahm : ActiveHashMap<int, int>, start : int) : void {
+      repeat i <- 1000 {
+        let v = start + i;
+        ahm.put(v, v*v)
+      }
+  }
+
+  def wait() : void ()
+
+
+class Main {
+  def main() : void {
+    let module = "Active Hash Map";
+    test_singleuse(new Test(module, "Single use"));
+    test_oneadder(new Test(module, "One adder"));
+    test_manyadders(new Test(module, "Many Adders"));
+  }
+}
