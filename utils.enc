@@ -226,6 +226,7 @@ passive class HashMap<k, v>
       repeat i <- oldBuckets.size() * 2 {
         this.buckets.add(new List<HashMapEntry<k, v>>());
       };
+      this.items = 0;
       repeat b <- oldBuckets.size() {
         repeat i <- oldBuckets.at(b).size() {
           let

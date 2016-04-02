@@ -1,0 +1,27 @@
+import all
+import test_utils
+
+def test_basics(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let hs = new HashSet<int>(eq, toInt);
+
+  test.assert(hs.size() == 0, "Initially empty");
+
+  hs.add(5);
+
+  test.assert(hs.size() == 1, "Size increased");
+  test.assert(hs.contains(5), "Contains added elem");
+
+  hs.remove(5);
+
+  test.assert(hs.size() == 0, "Size decreased");
+  test.assert(not hs.contains(5), "Element removed");
+}
+
+class Main {
+  def main() : void {
+    let module = "HashSet";
+    test_basics(new Test(module, "Basics"));
+  }
+}

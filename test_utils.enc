@@ -12,7 +12,7 @@ passive class Test
 
   def assert(b : bool, desc : String) : void {
     if (not b) then {
-      print("\nFailed: {}\n", desc);
+      print("\n  Failed: {}\n", desc);
     } else {
       print("{}", ".");
     }

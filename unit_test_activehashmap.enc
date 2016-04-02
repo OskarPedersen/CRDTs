@@ -14,6 +14,15 @@ def test_singleuse(test : Test) : void {
   test.assert((get ahm.size()) == 1, "Size increased by 1");
   test.assert(match (get ahm.getValue(1)) with Nothing => false Just v => v == 10,
    "put get");
+
+   repeat i <- 99 {
+      ahm.put(i + 2, i*i)
+   };
+   get ahm.wait();
+
+   test.assert(match (get ahm.getValue(87)) with Nothing => false Just v => v == (85*85),
+    "get 87");
+   test.assert((get ahm.size()) == 100, "Size increased by 99");
 }
 
 def test_oneadder(test : Test) : void {
@@ -25,7 +34,6 @@ def test_oneadder(test : Test) : void {
   get ahm.wait();
 
   test.assert((get ahm.size()) == 1000, "All adds arrived");
-
 }
 
 def test_manyadders(test : Test) : void {
@@ -42,8 +50,7 @@ def test_manyadders(test : Test) : void {
     get (w[i]).wait()
   };
   get ahm.wait();
-  print((get ahm.size()));
-  test.assert((get ahm.size()) ==  2000, "Correct size");
+  test.assert((get ahm.size()) ==  1900, "Correct size");
 }
 
 class Adder
