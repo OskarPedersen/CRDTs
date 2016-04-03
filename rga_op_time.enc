@@ -117,8 +117,12 @@ class LocalRGA<t>
       let right = left.next;
       let newNodeId = new NodeID(this.id, this.nextNodeID(), false);
       repeat i <- |this.localRGAs|{
-        (this.localRGAs[i]).addDownstream(left.nodeID, right.nodeID, elem, newNodeId)
+        if (this.id != i) then {
+          (this.localRGAs[i]).addDownstream(left.nodeID, right.nodeID, elem, newNodeId);
+          ()
+        }
       };
+      this.addDownstream(left.nodeID, right.nodeID, elem, newNodeId);
       newNodeId;
     }
   }
@@ -151,8 +155,12 @@ class LocalRGA<t>
 
   def remove(index : NodeID) : void {
     repeat i <- |this.localRGAs|{
-      (this.localRGAs[i]).removeDownstream(index)
-    }
+      if (this.id != i) then {
+        (this.localRGAs[i]).removeDownstream(index);
+        ()
+      };
+    };
+    this.removeDownstream(index);
   }
 
   def removeDownstream(index : NodeID) : void {
@@ -168,8 +176,12 @@ class LocalRGA<t>
 
   def set(index : NodeID, elem : t) : void {
     repeat i <- |this.localRGAs|{
-      (this.localRGAs[i]).setDownstream(index, elem)
-    }
+      if (this.id != i) then {
+        (this.localRGAs[i]).setDownstream(index, elem);
+        ()
+      }
+    };
+    this.setDownstream(index, elem)
   }
 
   def setDownstream(index : NodeID, elem : t) : void {

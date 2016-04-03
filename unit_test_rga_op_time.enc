@@ -43,6 +43,40 @@ def test_seq(test : Test) : void {
     "Iterator correct for last elem");
   test.assert(match iter.next() with Nothing => true Just (elem, id) => false,
     "End reached");
+
+  rga.remove(firstID);
+
+  test.assert((get rga.size()) == 2, "Size decreased");
+
+  let rmiter = get rga.iterator();
+
+  test.assert(match rmiter.next() with Nothing => false Just (elem, id) => elem == middleVal,
+    "Iterator correct for middle elem (after rm)");
+  test.assert(match rmiter.next() with Nothing => false Just (elem, id) => elem == lastVal,
+    "Iterator correct for last elem (after rm)");
+  test.assert(match rmiter.next() with Nothing => true Just (elem, id) => false,
+    "End reached (after rm)");
+
+  let uniter = get rga.iteratorUnordered();
+
+  let res = new [Maybe (int, NodeID)](3);
+  let middleFound = false;
+  let lastFound = false;
+  repeat i <- 2 {
+    match uniter.next() with Nothing => () Just (elem, id) => {
+      if (elem == middleVal) then {
+        middleFound = true;
+      } else if (elem == lastVal) then {
+        lastFound = true;
+      }
+    }
+  };
+  test.assert(middleFound, "Middle found with unordered");
+  test.assert(lastFound, "Last found with unordered");
+  test.assert(match uniter.next() with Nothing => true Just (elem, id) => false,
+    "End reached (after rm with unordered)");
+
+
 }
 
 class Main {
