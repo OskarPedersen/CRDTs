@@ -1,0 +1,53 @@
+import all
+import test_utils
+
+def test_seq(test : Test) : void {
+  let rga = new RGA<int>();
+
+  test.assert((get rga.size()) == 0, "Initially empty");
+
+  let firstVal = 1;
+  let firstID = get rga.append(firstVal);
+
+  test.assert(match (get rga.at(firstID)) with
+    Nothing => false Just i => i == firstVal, "at firstID = firstVal");
+  test.assert((get rga.size()) == 1, "Size increased to 1");
+
+  let lastVal = 3;
+  let lastID = get rga.append(lastVal);
+
+  test.assert(match (get rga.at(firstID)) with
+    Nothing => false Just i => i == firstVal, "Still at firstID = firstVal");
+  test.assert(match (get rga.at(lastID)) with
+    Nothing => false Just i => i == lastVal, "at lastID = lastVal");
+  test.assert((get rga.size()) == 2, "Size increased to 2");
+
+  let middleVal = 2;
+  let middleID = get rga.addAfter(firstID, middleVal);
+
+  test.assert(match (get rga.at(firstID)) with
+    Nothing => false Just i => i == firstVal, "Still at firstID = firstVal");
+  test.assert(match (get rga.at(middleID)) with
+    Nothing => false Just i => i == middleVal, "Still at middleID = middleVal");
+  test.assert(match (get rga.at(lastID)) with
+    Nothing => false Just i => i == lastVal, "Still at lastID = lastVal");
+  test.assert((get rga.size()) == 3, "Size increased to 3");
+
+  let iter = get rga.iterator();
+
+  test.assert(match iter.next() with Nothing => false Just (elem, id) => elem == firstVal,
+    "Iterator correct for first elem");
+  test.assert(match iter.next() with Nothing => false Just (elem, id) => elem == middleVal,
+    "Iterator correct for middle elem");
+  test.assert(match iter.next() with Nothing => false Just (elem, id) => elem == lastVal,
+    "Iterator correct for last elem");
+  test.assert(match iter.next() with Nothing => true Just (elem, id) => false,
+    "End reached");
+}
+
+class Main {
+  def main() : void {
+    let module = "RGA OP time";
+    test_seq(new Test(module, "Sequential"));
+  }
+}
