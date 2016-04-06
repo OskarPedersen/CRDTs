@@ -1,0 +1,32 @@
+import all
+
+
+class ActiveHashSetWorker
+  def init(hashSet : ActiveHashSet, adds : int) : void {
+    repeat i <- adds {
+      hashSet.add(i);
+    }
+  }
+
+  def wait() : void ()
+
+class Main
+  def main() : void {
+    let runs = 2;
+    let adds = 100000;
+    let workers = 4;
+
+    repeat i <- runs {
+      let hashSet = new ActiveHashSet();
+      let hashSetWorkers = new [ActiveHashSetWorker](workers);
+      tic();
+      repeat i <- |hashSetWorkers| {
+        hashSetWorkers[i] = new ActiveHashSetWorker(hashSet, adds);
+      };
+      repeat i <- |hashSetWorkers| {
+        get (hashSetWorkers[i]).wait()
+      };
+      get hashSet.wait();
+      print("HashSet: {} ms\n", toc());
+    }
+  }

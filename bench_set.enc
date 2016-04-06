@@ -10,21 +10,20 @@ def intToInt(a : int) : int {
 
 class Worker<s>
   def go(adds : int, set : s, add : (s, int) -> void, contains : (s, int) -> void) : void {
-    repeat i <- adds / 100 {
-      add(set, i)
+    repeat i <- adds { -- / 100
+      add(set, i);
+      --contains(set, i)
     };
-    repeat i <- adds {
-      contains(set, i)
-    }
+    --repeat i <- adds {
+    --  contains(set, i)
+    --}
   }
 
-  def wait() : void {
-    ()
-  }
+  def wait() : void ()
 
 passive class Runner<s>
   def init(set : s, name : String, adds : int, add : (s, int) -> void, wait : (s) -> void, contains : (s, int) -> void) : void {
-    let workers = new [Worker<s>](4);
+    let workers = new [Worker<s>](4); -- TOOD this 4 should be argument from main
     repeat i <- |workers| {
       workers[i] = new Worker<s>()
     };
@@ -42,7 +41,7 @@ passive class Runner<s>
 
 class Main
   def main() : void {
-    let runs = 1;
+    let runs = 2;
     let adds = 100000;
     let workers = 4;
 
@@ -60,8 +59,8 @@ class Main
 
     repeat i <- runs {
       new Runner<ActiveHashSet<int>>(new ActiveHashSet<int>(eq, intToInt), "HashSet", adds, hashSetAdd, hashSetWait, hashSetContains);
-      new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait, divTimeContains);
-      new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait, opOrContains);
+      --new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait, divTimeContains);
+      --new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait, opOrContains);
 
     }
   }

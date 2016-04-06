@@ -1,0 +1,44 @@
+
+
+class ActiveHashSet
+  def size() : void {
+    ()
+  }
+
+class Worker
+  def go(adds : int, set : ActiveHashSet, add : (ActiveHashSet, int) -> void) : void {
+    repeat i <- adds {
+      set.size()
+    };
+  }
+
+  def wait() : void ()
+
+passive class Runner
+  def init(set : ActiveHashSet, name : String, adds : int, add : (ActiveHashSet, int) -> void) : void {
+    let workers = new [Worker](4);
+    repeat i <- |workers| {
+      workers[i] = new Worker()
+    };
+
+    repeat i <- |workers| {
+      (workers[i])!go(adds, set, add)
+    };
+    repeat i <- |workers| {
+      get (workers[i]).wait()
+    };
+    --wait(set);
+    print("{}: ? ms\n", name);
+  }
+
+class Main
+  def main() : void {
+    let runs = 2;
+    let adds = 10000;
+
+    let hashSetAdd = \(hs : ActiveHashSet, elem : int) -> {hs.size(); ()};
+
+    repeat i <- runs {
+      new Runner(new ActiveHashSet(), "HashSet", adds, hashSetAdd);
+    }
+  }
