@@ -11,24 +11,24 @@ passive class TimeOp
 
 class DistSet
   id : int
-  maps : [ActiveHashMap<t, TimeOp>]
+  maps : [ActiveHashMap_int_TimeOp]
 
-  def init(id : int, maps : [ActiveHashMap<t, TimeOp>]) : void {
+  def init(id : int, maps : [ActiveHashMap_int_TimeOp]) : void {
     this.id = id;
     this.maps = maps;
   }
 
-  def add(elem : t) : void {
+  def add(elem : int) : void {
     (this.maps[this.id]).put(elem, new TimeOp(true))
   }
 
-  def remove(elem : t) : void {
+  def remove(elem : int) : void {
     (this.maps[this.id]).put(elem, new TimeOp(false))
   }
 
-  def contains(elem : t) : bool {
+  def contains(elem : int) : bool {
     let
-      futs = new [Fut Maybe TimeOp](|this.maps|)
+      futs = new [Fut TimeOp](|this.maps|)
       latestAdd = -1
       latestRemove = -1
     in {
@@ -38,15 +38,14 @@ class DistSet
       };
 
       repeat i <- |this.maps| {
-          match get (futs[i]) with
-          Nothing => ()
-          Just timeOp => {
-            if (timeOp.op == true) then {
-              latestAdd = max(latestAdd, timeOp.time);
-            } else {
-              latestRemove = max(latestRemove, timeOp.time);
-            }
+        let timeOp = get (futs[i]);
+        if (timeOp != null) then {
+          if (timeOp.op == true) then {
+            latestAdd = max(latestAdd, timeOp.time);
+          } else {
+            latestRemove = max(latestRemove, timeOp.time);
           }
+        }
       };
       if (latestAdd == -1) then {
         false;
@@ -61,38 +60,31 @@ class DistSet
   }
 
 --public class
-passive class DivTimeSet<t>
-  distSets : [DistSet<t>]
-  maps : [ActiveHashMap<t, TimeOp>]
-  eq : (t,t) -> bool
-  toInt : (t) -> int
+passive class DivTimeSet
+  distSets : [DistSet]
+  maps : [ActiveHashMap_int_TimeOp]
 
-  def init(eq : (t,t) -> bool, toInt : (t) -> int) : void {
-    let
-      nc = numcores()
-    in {
-      this.eq = eq;
-      this.toInt = toInt;
-      this.distSets = new [DistSet<t>](nc);
-      this.maps = new [ActiveHashMap<t, TimeOp>](nc);
-      repeat i <- nc {
-        this.maps[i] = new ActiveHashMap<t, TimeOp>(eq, toInt);
-      };
-      repeat i <- nc {
-        this.distSets[i] = new DistSet<t>(i, this.maps);
-      };
-    }
+  def init() : void {
+    let nc = numcores();
+    this.distSets = new [DistSet](nc);
+    this.maps = new [ActiveHashMap_int_TimeOp](nc);
+    repeat i <- nc {
+      this.maps[i] = new ActiveHashMap_int_TimeOp();
+    };
+    repeat i <- nc {
+      this.distSets[i] = new DistSet(i, this.maps);
+    };
   }
 
-  def add(elem : t) : void {
+  def add(elem : int) : void {
     (this.distSets[core()]).add(elem)
   }
 
-  def remove(elem : t) : void {
+  def remove(elem : int) : void {
     (this.distSets[core()]).remove(elem)
   }
 
-  def contains(elem : t) : Fut bool {
+  def contains(elem : int) : Fut bool {
     (this.distSets[core()]).contains(elem)
   }
 

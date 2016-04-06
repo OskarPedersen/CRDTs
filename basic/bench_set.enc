@@ -2,7 +2,7 @@ import all
 
 
 class ActiveHashSetWorker
-  def init(hashSet : ActiveHashSet, adds : int) : void {
+  def init(hashSet : ActiveHashSet_int, adds : int) : void {
     repeat i <- adds {
       hashSet.add(i);
     }
@@ -10,14 +10,23 @@ class ActiveHashSetWorker
 
   def wait() : void ()
 
+class DivTimeSetWorker
+  def init(divTimeSet : DivTimeSet, adds : int) : void {
+    repeat i <- adds {
+      divTimeSet.add(i)
+    }
+  }
+
+  def wait() : void ()
+
 class Main
   def main() : void {
-    let runs = 2;
+    let runs = 20;
     let adds = 100000;
-    let workers = 4;
+    let workers = 1;
 
     repeat i <- runs {
-      let hashSet = new ActiveHashSet();
+      let hashSet = new ActiveHashSet_int();
       let hashSetWorkers = new [ActiveHashSetWorker](workers);
       tic();
       repeat i <- |hashSetWorkers| {
@@ -28,5 +37,18 @@ class Main
       };
       get hashSet.wait();
       print("HashSet: {} ms\n", toc());
+
+
+      let divTimeSet = new DivTimeSet();
+      let divTimeSetWorkers = new [DivTimeSetWorker](workers);
+      tic();
+      repeat i <- |divTimeSetWorkers| {
+        divTimeSetWorkers[i] = new DivTimeSetWorker(divTimeSet, adds)
+      };
+      repeat i <- |divTimeSetWorkers | {
+        get (divTimeSetWorkers[i]).wait()
+      };
+      divTimeSet.wait();
+      print("DivTimeSet: {} ms\n", toc());
     }
   }

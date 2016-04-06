@@ -44,7 +44,7 @@ passive class HashMap___KEY_____VALUE__
   def getValue(key : __KEY__) : __VALUE__ {
     let
       bucket = this.hash(key)
-      res = __NULL__
+      res = __VALUE_NULL__
     in {
       repeat i <- (this.buckets[bucket]).size() {
         if ( this.equal((this.buckets[bucket]).at(i).key, key))  then {
@@ -119,7 +119,7 @@ passive class HashMap___KEY_____VALUE__
     let break = false;
     while (not break) {
       let key = iter.next();
-      if (key == __NULL__) then {
+      if (key == __KEY_NULL__) then {
         break = true;
       } else {
         this.remove(key);

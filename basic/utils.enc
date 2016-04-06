@@ -1,7 +1,5 @@
 bundle utils where
-import list
-import hashmap
-import hashset
+
 
 
 embed
@@ -67,11 +65,13 @@ def core() : int {
     exitMsg("sched_getcpu() returned -1");
   };
   c
+  ;0
 
 }
 
 def numcores() : int {
   embed int c_numcores(); end
+  ;1
 }
 
 def max(a : int, b : int) : int {
@@ -97,10 +97,4 @@ def currentTime() : int {
 def exitMsg(msg : String) : void {
   print("Error: {}. Exiting.\n", msg);
   embed void exit(EXIT_FAILURE); end
-}
-
-class Main {
-  def main() : void {
-    ()
-  }
 }

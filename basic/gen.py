@@ -1,4 +1,4 @@
-list_t = ['int', 'HashMapEntry_int_int']
+list_t = ['int', 'HashMapEntry_int_int', 'HashMapEntry_int_TimeOp']
 list_inf = open('gen_list.enc', 'r')
 list_gen = list_inf.read()
 list_inf.close()
@@ -9,11 +9,12 @@ for l in list_t:
 list_outf.close()
 
 
-hm_k = ["int"]
-hm_v = ["int"]
-hm_eq = ["a == b"]
-hm_to = ["a"]
-hm_null = ["-1"]
+hm_k =      ['int',      'int']
+hm_v =      ['int',     'TimeOp']
+hm_eq =     ['a == b',  'a == b']
+hm_to =     ['a',       'a']
+hm_k_null =   ['-1',      '-1']
+hm_v_null = ['-1',      'null : TimeOp']
 hm_inf = open('gen_hashmap.enc', 'r')
 hm_gen = hm_inf.read()
 hm_inf.close()
@@ -24,12 +25,14 @@ for k in hm_k:
     v = hm_v[i]
     e = hm_eq[i]
     t = hm_to[i]
-    n = hm_null[i]
+    kn = hm_k_null[i]
+    vn = hm_v_null[i]
     res = hm_gen.replace('__KEY__', k)
     res = res.replace('__VALUE__', v)
     res = res.replace('__EQUAL__', e)
     res = res.replace('__TOINT__', t)
-    res = res.replace('__NULL__', n)
+    res = res.replace('__KEY_NULL__', kn)
+    res = res.replace('__VALUE_NULL__', vn)
     hm_outf.write(res)
 
     i = i + 1
