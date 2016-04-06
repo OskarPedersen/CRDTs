@@ -1,0 +1,106 @@
+
+passive class HashSet___TYPE__
+  hashMap : HashMap___TYPE___int
+
+  def init() : void {
+    this.hashMap = new HashMap___TYPE___int()
+  }
+
+  def add(elem : __TYPE__) : void {
+    this.hashMap.put(elem, 0)
+  }
+
+  def remove(elem : __TYPE__) : void {
+    this.hashMap.remove(elem)
+  }
+
+  def removeAll(elems : HashSet___TYPE__) : void {
+    this.hashMap.removeAll(elems)
+  }
+
+  def contains(elem : __TYPE__) : bool {
+    if (this.hashMap.getValue(elem) == __NULL__) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def size() : int {
+    this.hashMap.size()
+  }
+
+  def getHashMap() : HashMap___TYPE___int{
+    this.hashMap
+  }
+
+  def iterator() : HashSetIterator___TYPE__ {
+    new HashSetIterator___TYPE__(this)
+  }
+
+  def addAll(set : HashSet___TYPE__) : void {
+    let break = false;
+    let iter = set.iterator();
+    while (not break) {
+      let elem = iter.next();
+      if (elem == -1) then {
+        break = true
+      } else {
+        this.add(elem)
+      }
+    }
+  }
+
+  def clone() : HashSet___TYPE__ {
+    let set = new HashSet___TYPE__();
+    set.addAll(this);
+    set
+  }
+
+passive class HashSetIterator___TYPE__
+  hashMapIterator : HashMapIterator___TYPE___int
+
+  def init(hashSet : HashSet___TYPE__) : void {
+    this.hashMapIterator = hashSet.getHashMap().iterator();
+  }
+
+
+  def next() : int {
+    let entry = this.hashMapIterator.next();
+    if (entry == null) then {
+      __NULL__
+    } else {
+      entry.key
+    }
+  }
+
+class ActiveHashSet___TYPE__
+  hashSet : HashSet___TYPE__
+
+  def init() : void {
+    this.hashSet = new HashSet___TYPE__()
+  }
+
+  def add(elem : __TYPE__) : void {
+    this.hashSet.add(elem);
+  }
+
+  def remove(elem : __TYPE__) : void {
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet___TYPE__) : void {
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : __TYPE__) : bool {
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.hashSet.size()
+  }
+
+  def wait() : void {
+    ()
+  }

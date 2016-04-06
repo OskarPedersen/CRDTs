@@ -1,0 +1,215 @@
+bundle hashmap where
+passive class HashMapEntry_int_int
+  key : int
+  value : int
+
+  def init(key : int, value : int) : void {
+    this.key = key;
+    this.value = value;
+  }
+
+
+passive class HashMap_int_int
+  buckets : [List_HashMapEntry_int_int]
+  loadFactor : real
+  items : int
+
+  def init() : void {
+    this.buckets = new [List_HashMapEntry_int_int](10);
+    this.loadFactor = 0.75;
+    this.items = 0;
+    repeat i <- |this.buckets| {
+      this.buckets[i] = new List_HashMapEntry_int_int();
+    };
+  }
+
+  def put(key : int, value : int) : void {
+    let bucket = this.hash(key);
+    let exists = false;
+    repeat i <- (this.buckets[bucket]).size() {
+      if ( this.equal((this.buckets[bucket]).at(i).key, key)) then {
+        exists = true;
+        (this.buckets[bucket]).at(i).value = value;
+        i = (this.buckets[bucket]).size() --break
+      }
+    };
+    if (exists == false) then {
+      (this.buckets[bucket]).add(new HashMapEntry_int_int(key, value));
+      this.items = this.items + 1;
+      if (this.items * this.loadFactor >= |this.buckets|) then {
+        this.grow();
+      }
+    }
+  }
+
+  def getValue(key : int) : int {
+    let
+      bucket = this.hash(key)
+      res = -1
+    in {
+      repeat i <- (this.buckets[bucket]).size() {
+        if ( this.equal((this.buckets[bucket]).at(i).key, key))  then {
+          res = (this.buckets[bucket]).at(i).value;
+          i = (this.buckets[bucket]).size() --break
+        }
+      };
+      res
+    }
+  }
+
+
+  def grow() : void {
+    let oldBuckets = this.buckets;
+    this.buckets = new [List_HashMapEntry_int_int](|oldBuckets| * 2);
+    repeat i <- |this.buckets| {
+      this.buckets[i] = new List_HashMapEntry_int_int();
+    };
+    this.items = 0;
+    repeat b <- |oldBuckets| {
+      repeat i <- (oldBuckets[b]).size() {
+        let entry = (oldBuckets[b]).at(i);
+        this.put(entry.key, entry.value);
+      }
+    }
+  }
+
+  def equal(a : int, b : int) : bool {
+    a == b
+  }
+
+  def toInt(a : int) : int {
+    a
+  }
+
+  def hash(key : int) : int {
+    this.toInt(key) % |this.buckets|
+
+  }
+
+  def getBuckets() : [List_HashMapEntry_int_int] {
+    this.buckets
+  }
+
+  def putAll(hashMap : HashMap_int_int) : void {
+    let otherBuckets = hashMap.getBuckets();
+    repeat b <- |otherBuckets| {
+      repeat i <- (otherBuckets[b]).size() {
+        let entry = (otherBuckets[b]).at(i);
+        this.put(entry.key, entry.value);
+      }
+    }
+  }
+
+  def size() : int {
+    this.items
+  }
+
+  def remove(key : int) : void {
+    let bucket = this.hash(key);
+    repeat i <- (this.buckets[bucket]).size() {
+      if (this.equal((this.buckets[bucket]).at(i).key, key)) then {
+        (this.buckets[bucket]).remove(i);
+        this.items = this.items - 1;
+        i = (this.buckets[bucket]).size() + 1 --break
+      }
+    }
+  }
+
+  def removeAll(keys : HashSet_int) : void {
+    let iter = keys.iterator();
+    let break = false;
+    while (not break) {
+      let key = iter.next();
+      if (key == -1) then {
+        break = true;
+      } else {
+        this.remove(key);
+      }
+    }
+  }
+
+  def iterator() : HashMapIterator_int_int {
+    new HashMapIterator_int_int(this)
+  }
+
+passive class HashMapIterator_int_int
+  hashMap : HashMap_int_int
+  bucket : int
+  i : int
+  endReached : bool
+
+  def init(hashMap : HashMap_int_int) : void {
+    this.hashMap = hashMap;
+    this.bucket = 0;
+    this.i = -1;
+    this.endReached = false;
+  }
+
+  def step() : void {
+    let break = false;
+    while (not break) {
+      this.i = this.i + 1;
+      if (this.i >= (this.hashMap.buckets[this.bucket]).size()) then {
+        this.i = 0;
+        this.bucket = this.bucket + 1;
+        if (this.bucket >= |this.hashMap.buckets|) then {
+          this.endReached = true;
+          break = true;
+        }
+      };
+      if ((not this.endReached)) then {
+        if (this.i < (this.hashMap.buckets[this.bucket]).size()) then {
+          break = true
+        }
+      }
+    }
+  }
+
+  def next() : HashMapEntry_int_int {
+    if (this.endReached) then {
+      null : HashMapEntry_int_int
+    } else {
+      this.step();
+      if (this.endReached) then {
+        null : HashMapEntry_int_int
+      } else {
+        (this.hashMap.buckets[this.bucket]).at(this.i);
+      }
+    }
+  }
+
+class ActiveHashMap_int_int
+  hashMap : HashMap_int_int
+
+  def init() : void {
+    this.hashMap = new HashMap_int_int()
+  }
+
+  def put(key : int, value : int) : void {
+    this.hashMap.put(key, value)
+  }
+
+  def getValue(key : int) : int {
+    this.hashMap.getValue(key)
+  }
+
+
+  def wait() : void {
+    ()
+  }
+
+  def getBuckets() : [List_HashMapEntry_int_int] {
+    this.hashMap.getBuckets()
+  }
+
+  def putAll(hashMap : HashMap_int_int) : void {
+    this.hashMap.putAll(hashMap)
+  }
+
+  def size() : int {
+    this.hashMap.size()
+  }
+
+  def remove(key : int) : void {
+    this.hashMap.remove(key)
+  }

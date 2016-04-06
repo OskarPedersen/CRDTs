@@ -1,0 +1,56 @@
+passive class List___TYPE__
+  elems : [__TYPE__]
+  size : int
+
+  def init() : void {
+    this.elems = new [__TYPE__](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [__TYPE__](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : __TYPE__) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(i : int) : __TYPE__ {
+    this.boundsCheck(i);
+    this.elems[i]
+  }
+
+  def set(i : int, elem : __TYPE__) : void {
+    this.boundsCheck(i);
+    this.elems[i] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(i : int) : void {
+    if ((i < 0) or (i >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }

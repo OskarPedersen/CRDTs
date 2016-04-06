@@ -1,0 +1,524 @@
+bundle utils where
+
+embed
+  #include <stdlib.h>
+  #include <unistd.h>
+  #include <sched.h>
+  #include <sys/time.h>
+  #include <stdlib.h>
+
+  long sysconf(int name);
+  int sched_getcpu(void);
+
+body
+
+  int c_core() {
+    return sched_getcpu();
+  }
+
+  int c_numcores() {
+    return sysconf(_SC_NPROCESSORS_ONLN);
+  }
+
+  struct timeval start, stop, current;
+
+  int64_t c_current() {
+    if(gettimeofday(&current, NULL) == -1) {
+      return -1;
+    }
+    return (current.tv_sec) * 1E6 + (current.tv_usec) ;
+  }
+
+  void c_tic() {
+    gettimeofday(&start, NULL);
+  }
+
+  int64_t c_toc() {
+    gettimeofday(&stop, NULL);
+    return ((stop.tv_sec - start.tv_sec) * 1E6 + (stop.tv_usec - start.tv_usec)) / 1E3;
+  }
+
+  void c_seed(int64_t seed) {
+    srand(seed);
+  }
+
+  int64_t c_rand() {
+    return rand();
+  }
+end
+
+
+def randomSeq(len : int, min : int, max : int, seed : int) : [int] {
+  let seq = new [int](len);
+  embed void c_seed(#{seed}); end;
+  repeat i <- |seq| {
+    seq[i] = (embed int c_rand(); end % (max - min + 1)) + min;
+  };
+  seq
+}
+
+def core() : int {
+  let c = embed int c_core(); end;
+  if (c == -1) then {
+    exitMsg("sched_getcpu() returned -1");
+  };
+  c
+
+}
+
+def numcores() : int {
+  embed int c_numcores(); end
+}
+
+def max(a : int, b : int) : int {
+    if (a > b) then {
+      a
+    } else {
+      b
+    }
+}
+
+def tic() : void {
+  embed void c_tic(); end
+}
+
+def toc() : int {
+  embed int c_toc(); end
+}
+
+def currentTime() : int {
+  embed int c_current(); end
+}
+
+def exitMsg(msg : String) : void {
+  print("Error: {}. Exiting.\n", msg);
+  embed void exit(EXIT_FAILURE); end
+}
+
+passive class List
+  elems : [int]
+  size : int
+
+  def init() : void {
+    this.elems = new [int](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [int](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : int) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(index : int) : int {
+    this.boundsCheck(index);
+    this.elems[index]
+  }
+
+  def set(index : int, elem : int) : void {
+    this.boundsCheck(index);
+    this.elems[index] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(index : int) : void {
+    if ((index < 0) or (index >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }
+
+passive class ListHME
+  elems : [HashMapEntry]
+  size : int
+
+  def init() : void {
+    this.elems = new [HashMapEntry](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [HashMapEntry](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : HashMapEntry) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(index : int) : HashMapEntry {
+    this.boundsCheck(index);
+    this.elems[index]
+  }
+
+  def set(index : int, elem : HashMapEntry) : void {
+    this.boundsCheck(index);
+    this.elems[index] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(index : int) : void {
+    if ((index < 0) or (index >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }
+
+passive class HashMapEntry
+  key : int
+  value : int
+
+  def init(key : int, value : int) : void {
+    this.key = key;
+    this.value = value;
+  }
+
+
+passive class HashMap
+  buckets : [ListHME]
+  loadFactor : real
+  items : int
+
+  def init() : void {
+    this.buckets = new [ListHME](10);
+    this.loadFactor = 0.75;
+    this.items = 0;
+    repeat i <- |this.buckets| {
+      this.buckets[i] = new ListHME();
+    };
+  }
+
+  def put(key : int, value : int) : void {
+    let bucket = this.hash(key);
+    let exists = false;
+    repeat i <- (this.buckets[bucket]).size() {
+      if ((this.buckets[bucket]).at(i).key == key) then {
+        exists = true;
+        (this.buckets[bucket]).at(i).value = value;
+        i = (this.buckets[bucket]).size() --break
+      }
+    };
+    if (exists == false) then {
+      (this.buckets[bucket]).add(new HashMapEntry(key, value));
+      this.items = this.items + 1;
+      if (this.items * this.loadFactor >= |this.buckets|) then {
+        this.grow();
+      }
+    }
+  }
+
+  def getValue(key : int) : int {
+    let
+      bucket = this.hash(key)
+      res = -1
+    in {
+      repeat i <- (this.buckets[bucket]).size() {
+        if ( (this.buckets[bucket]).at(i).key == key)  then {
+          res = (this.buckets[bucket]).at(i).value;
+          i = (this.buckets[bucket]).size() --break
+        }
+      };
+      res
+    }
+  }
+
+
+  def grow() : void {
+    let oldBuckets = this.buckets;
+    this.buckets = new [ListHME](|oldBuckets| * 2);
+    repeat i <- |this.buckets| {
+      this.buckets[i] = new ListHME();
+    };
+    this.items = 0;
+    repeat b <- |oldBuckets| {
+      repeat i <- (oldBuckets[b]).size() {
+        let entry = (oldBuckets[b]).at(i);
+        this.put(entry.key, entry.value);
+      }
+    }
+  }
+
+  def hash(key : int) : int {
+    key % |this.buckets|
+
+  }
+
+  def getBuckets() : [ListHME] {
+    this.buckets
+  }
+
+  def putAll(hashMap : HashMap) : void {
+    let otherBuckets = hashMap.getBuckets();
+    repeat b <- |otherBuckets| {
+      repeat i <- (otherBuckets[b]).size() {
+        let entry = (otherBuckets[b]).at(i);
+        this.put(entry.key, entry.value);
+      }
+    }
+  }
+
+  def size() : int {
+    this.items
+  }
+
+  def remove(key : int) : void {
+    let bucket = this.hash(key);
+    repeat i <- (this.buckets[bucket]).size() {
+      if ((this.buckets[bucket]).at(i).key == key) then {
+        (this.buckets[bucket]).remove(i);
+        this.items = this.items - 1;
+        i = (this.buckets[bucket]).size() + 1 --break
+      }
+    }
+  }
+
+  def removeAll(keys : HashSet) : void {
+    let iter = keys.iterator();
+    let break = false;
+    while (not break) {
+      let key = iter.next();
+      if (key == -1) then {
+        break = true;
+      } else {
+        this.remove(key);
+      }
+    }
+  }
+
+  def iterator() : HashMapIterator {
+    new HashMapIterator(this)
+  }
+
+passive class HashMapIterator
+  hashMap : HashMap
+  bucket : int
+  i : int
+  endReached : bool
+
+  def init(hashMap : HashMap) : void {
+    this.hashMap = hashMap;
+    this.bucket = 0; -- -1
+    this.i = -1;
+    this.endReached = false;
+  }
+
+  def step() : void {
+    let break = false;
+    while (not break) {
+      this.i = this.i + 1;
+      if (this.i >= (this.hashMap.buckets[this.bucket]).size()) then {
+        this.i = 0; --0
+        this.bucket = this.bucket + 1;
+        if (this.bucket >= |this.hashMap.buckets|) then {
+          this.endReached = true;
+          break = true;
+        }
+      };
+      if ((not this.endReached)) then {
+        if (this.i < (this.hashMap.buckets[this.bucket]).size()) then {
+          break = true
+        }
+      }
+    }
+  }
+
+  def next() : HashMapEntry {
+    if (this.endReached) then {
+      null : HashMapEntry
+    } else {
+      this.step();
+      if (this.endReached) then {
+        null : HashMapEntry
+      } else {
+        (this.hashMap.buckets[this.bucket]).at(this.i);
+      }
+    }
+  }
+
+class ActiveHashMap
+  hashMap : HashMap
+
+  def init() : void {
+    this.hashMap = new HashMap()
+  }
+
+  def put(key : int, value : int) : void {
+    this.hashMap.put(key, value)
+  }
+
+  def getValue(key : int) : int {
+    this.hashMap.getValue(key)
+  }
+
+
+  def wait() : void {
+    ()
+  }
+
+  def getBuckets() : [ListHME] {
+    this.hashMap.getBuckets()
+  }
+
+  def putAll(hashMap : HashMap) : void {
+    this.hashMap.putAll(hashMap)
+  }
+
+  def size() : int {
+    this.hashMap.size()
+  }
+
+  def remove(key : int) : void {
+    this.hashMap.remove(key)
+  }
+
+
+passive class HashSet
+  hashMap : HashMap
+
+  def init() : void {
+    this.hashMap = new HashMap()
+  }
+
+  def add(elem : int) : void {
+    this.hashMap.put(elem, 0)
+  }
+
+  def remove(elem : int) : void {
+    this.hashMap.remove(elem)
+  }
+
+  def removeAll(elems : HashSet) : void {
+    this.hashMap.removeAll(elems)
+  }
+
+  def contains(elem : int) : bool {
+    if (this.hashMap.getValue(elem) == -1) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def size() : int {
+    this.hashMap.size()
+  }
+
+  def getHashMap() : HashMap{
+    this.hashMap
+  }
+
+  def iterator() : HashSetIterator {
+    new HashSetIterator(this)
+  }
+
+  def addAll(set : HashSet) : void {
+    let break = false;
+    let iter = set.iterator();
+    while (not break) {
+      let elem = iter.next();
+      if (elem == -1) then {
+        break = true
+      } else {
+        this.add(elem)
+      }
+    }
+  }
+
+  def clone() : HashSet {
+    let set = new HashSet();
+    set.addAll(this);
+    set
+  }
+
+passive class HashSetIterator
+  hashMapIterator : HashMapIterator
+
+  def init(hashSet : HashSet) : void {
+    this.hashMapIterator = hashSet.getHashMap().iterator();
+  }
+
+
+  def next() : int {
+    let entry = this.hashMapIterator.next();
+    if (entry == null) then {
+      -1
+    } else {
+      entry.key
+    }
+  }
+
+class ActiveHashSet
+  hashSet : HashSet
+
+  def init() : void {
+    this.hashSet = new HashSet()
+  }
+
+  def add(elem : int) : void {
+    this.hashSet.add(elem);
+  }
+
+  def remove(elem : int) : void {
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet) : void {
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : int) : bool {
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.hashSet.size()
+  }
+
+  def wait() : void {
+    ()
+  }
