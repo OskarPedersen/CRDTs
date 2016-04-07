@@ -19,7 +19,7 @@ passive class HashSet___TYPE__
   }
 
   def contains(elem : __TYPE__) : bool {
-    if (this.hashMap.getValue(elem) == __NULL__) then {
+    if (this.hashMap.getValue(elem) == -1) then {
       false
     } else {
       true
@@ -43,7 +43,7 @@ passive class HashSet___TYPE__
     let iter = set.iterator();
     while (not break) {
       let elem = iter.next();
-      if (elem == -1) then {
+      if (elem == __NULL__) then {
         break = true
       } else {
         this.add(elem)
@@ -65,7 +65,7 @@ passive class HashSetIterator___TYPE__
   }
 
 
-  def next() : int {
+  def next() : __TYPE__ {
     let entry = this.hashMapIterator.next();
     if (entry == null) then {
       __NULL__

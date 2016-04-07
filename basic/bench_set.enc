@@ -19,11 +19,20 @@ class DivTimeSetWorker
 
   def wait() : void ()
 
+class OpOrSetWorker
+  def init(set : OpOrSet, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
 class Main
   def main() : void {
     let runs = 20;
     let adds = 100000;
-    let workers = 1;
+    let workers = 4;
 
     repeat i <- runs {
       let hashSet = new ActiveHashSet_int();
@@ -50,5 +59,18 @@ class Main
       };
       divTimeSet.wait();
       print("DivTimeSet: {} ms\n", toc());
+
+
+      let opOrSet = new OpOrSet();
+      let opOrSetWorkers = new [OpOrSetWorker](workers);
+      tic();
+      repeat i <- |opOrSetWorkers| {
+        opOrSetWorkers[i] = new OpOrSetWorker(opOrSet, adds);
+      };
+      repeat i <- |opOrSetWorkers| {
+        get (opOrSetWorkers[i]).wait();
+      };
+      opOrSet.wait();
+      print("OpOrSet: {} ms\n", toc());
     }
   }

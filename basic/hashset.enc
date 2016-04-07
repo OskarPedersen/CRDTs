@@ -105,3 +105,109 @@ class ActiveHashSet_int
   def wait() : void {
     ()
   }
+
+passive class HashSet_NodeID
+  hashMap : HashMap_NodeID_int
+
+  def init() : void {
+    this.hashMap = new HashMap_NodeID_int()
+  }
+
+  def add(elem : NodeID) : void {
+    this.hashMap.put(elem, 0)
+  }
+
+  def remove(elem : NodeID) : void {
+    this.hashMap.remove(elem)
+  }
+
+  def removeAll(elems : HashSet_NodeID) : void {
+    this.hashMap.removeAll(elems)
+  }
+
+  def contains(elem : NodeID) : bool {
+    if (this.hashMap.getValue(elem) == -1) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def size() : int {
+    this.hashMap.size()
+  }
+
+  def getHashMap() : HashMap_NodeID_int{
+    this.hashMap
+  }
+
+  def iterator() : HashSetIterator_NodeID {
+    new HashSetIterator_NodeID(this)
+  }
+
+  def addAll(set : HashSet_NodeID) : void {
+    let break = false;
+    let iter = set.iterator();
+    while (not break) {
+      let elem = iter.next();
+      if (elem == null) then {
+        break = true
+      } else {
+        this.add(elem)
+      }
+    }
+  }
+
+  def clone() : HashSet_NodeID {
+    let set = new HashSet_NodeID();
+    set.addAll(this);
+    set
+  }
+
+passive class HashSetIterator_NodeID
+  hashMapIterator : HashMapIterator_NodeID_int
+
+  def init(hashSet : HashSet_NodeID) : void {
+    this.hashMapIterator = hashSet.getHashMap().iterator();
+  }
+
+
+  def next() : NodeID {
+    let entry = this.hashMapIterator.next();
+    if (entry == null) then {
+      null
+    } else {
+      entry.key
+    }
+  }
+
+class ActiveHashSet_NodeID
+  hashSet : HashSet_NodeID
+
+  def init() : void {
+    this.hashSet = new HashSet_NodeID()
+  }
+
+  def add(elem : NodeID) : void {
+    this.hashSet.add(elem);
+  }
+
+  def remove(elem : NodeID) : void {
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet_NodeID) : void {
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : NodeID) : bool {
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.hashSet.size()
+  }
+
+  def wait() : void {
+    ()
+  }

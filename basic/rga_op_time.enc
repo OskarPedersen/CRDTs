@@ -1,0 +1,330 @@
+bundle rga_op_time where
+
+passive class NodeID
+  time : int
+  localRGAid : int
+  uid : int --locally unique if two local nodes has same time
+
+  def init(id : int, uid : int, special : bool) : void {
+    if (special) then {
+      this.time = 0;
+      this.localRGAid = 0;
+    } else {
+      this.time = currentTime();
+      this.localRGAid = id;
+    };
+    this.uid = uid;
+  }
+
+  def lessThan(other : NodeID) : bool {
+    if (this.time >= other.time) then {
+      false
+    } else if (this.localRGAid >= other.localRGAid) then {
+      false
+    } else if (this.uid >= other.uid) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def equals(other : NodeID) : bool {
+    (this.time == other.time) and (this.localRGAid == other.localRGAid) and (this.uid == other.uid)
+  }
+
+  def toInt() : int {
+    ((31 * this.time) * 31 + this.localRGAid) * 31 + this.uid
+  }
+
+passive class RGANode
+  next : RGANode
+  prev : RGANode
+  removed : bool
+  elem : int
+  nodeID : NodeID
+
+  def init(nodeID : NodeID) : void {
+    this.nodeID = nodeID;
+    this.removed = false;
+    this.next = null;
+    this.prev = null;
+  }
+
+  def setup(elem : int) : void {
+    this.elem = elem;
+  }
+
+  def update(elem : int, time : NodeID) : void {
+    if ((not this.removed) and (this.nodeID.lessThan(time))) then {
+      this.nodeID = time;
+      this.elem = elem
+    }
+  }
+
+class LocalRGA
+  localRGAs : [LocalRGA]
+  id : int
+  firstNode : RGANode
+  lastNode : RGANode
+  hashMap : HashMap_NodeID_RGANode
+  size : int
+  nodeCounter : int
+
+  def init(id : int) : void {
+    this.nodeCounter = -1;
+    this.id = id;
+
+    this.lastNode = new RGANode(new NodeID(this.id, this.nextNodeID(), true));
+    this.lastNode.removed = true;
+    this.lastNode.next = null : RGANode;
+
+    this.firstNode = new RGANode(new NodeID(this.id, this.nextNodeID(), true));
+    this.firstNode.removed = true;
+    this.firstNode.next = this.lastNode;
+
+    this.lastNode.prev = this.firstNode;
+
+
+    this.hashMap = new HashMap_NodeID_RGANode();
+    this.hashMap.put(this.firstNode.nodeID, this.firstNode);
+    this.hashMap.put(this.lastNode.nodeID, this.lastNode);
+  }
+
+  def setup(localRGAs : [LocalRGA]) : void {
+    this.localRGAs = localRGAs;
+  }
+
+  def nextNodeID() : int {
+    this.nodeCounter = this.nodeCounter + 1;
+    this.nodeCounter;
+  }
+
+  def append(elem : int) : NodeID {
+    this.addAfter(this.lastNode.prev.nodeID, elem)
+  }
+
+  def addAfter(index : NodeID, elem : int) : NodeID {
+    let node = this.hashMap.getValue(index);
+    if (node == null) then {
+      exitMsg("Illegal index in add in LocalRGA");
+      null : NodeID
+    } else {
+      let left = node;
+      let right = left.next;
+      let newNodeId = new NodeID(this.id, this.nextNodeID(), false);
+      repeat i <- |this.localRGAs|{
+        if (this.id != i) then {
+          (this.localRGAs[i]).addDownstream(left.nodeID, right.nodeID, elem, newNodeId);
+          ()
+        }
+      };
+      this.addDownstream(left.nodeID, right.nodeID, elem, newNodeId);
+      newNodeId;
+    }
+  }
+
+  def addDownstream(left : NodeID, right : NodeID, elem : int, newNodeId : NodeID) : void {
+    let a = this.hashMap.getValue(left);
+    if (a == null) then {
+       exitMsg("problem in addDownstream in LocalRGA")
+    } else {
+      let leftNode = a;
+      let rightNode = leftNode.next;
+      let break = false;
+      while(not break) {
+        if ((newNodeId.lessThan(rightNode.nodeID)) or (rightNode.nodeID.equals(right))) then {
+          let node = new RGANode(newNodeId);
+          node.setup(elem);
+          leftNode.next = node;
+          node.next = rightNode;
+          node.prev = leftNode;
+          rightNode.prev = node;
+          this.hashMap.put(node.nodeID, node);
+          this.size = this.size + 1;
+          break = true;
+        };
+        if (not break) then {
+          rightNode = rightNode.next;
+        }
+      }
+    }
+  }
+
+  def remove(index : NodeID) : void {
+    repeat i <- |this.localRGAs|{
+      if (this.id != i) then {
+        (this.localRGAs[i]).removeDownstream(index);
+        ()
+      };
+    };
+    this.removeDownstream(index);
+  }
+
+  def removeDownstream(index : NodeID) : void {
+    let rgaNode = this.hashMap.getValue(index);
+    if (rgaNode == null) then {
+      exitMsg("node does not exist in removeDownstream in LocalRGA")
+    } else {
+      if (not rgaNode.removed) then {
+          rgaNode.removed = true;
+          this.size = this.size - 1;
+      }
+    }
+  }
+
+  def set(index : NodeID, elem : int) : void {
+    repeat i <- |this.localRGAs|{
+      if (this.id != i) then {
+        (this.localRGAs[i]).setDownstream(index, elem);
+        ()
+      }
+    };
+    this.setDownstream(index, elem)
+  }
+
+  def setDownstream(index : NodeID, elem : int) : void {
+    let node = this.hashMap.getValue(index);
+    if (node == null) then {
+      exitMsg("illegal index in setDownstream in LocalRGA")
+    } else {
+      if (node.removed) then {
+        exitMsg("index is removed in setDownstream in LocalRGA"); -- TODO this might not be an error, if concurrent set and remove with earlier set
+      } else {
+        exitMsg("set not supported RGA")-- TODO how to make this commute both with removes and other sets
+      }
+    }
+  }
+
+  def at(index : NodeID) : int {
+    let node = this.hashMap.getValue(index);
+    if (node == null) then {
+      exitMsg("illegal index in at in LocalRGA");
+      -1
+    } else {
+      if (node.removed) then {
+        -1
+      } else {
+        node.elem
+      }
+    }
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def iterator() : RGAIterator {
+    new RGAIterator(this.firstNode, this.lastNode)
+  }
+
+  def iteratorUnordered() : RGAIteratorUnordered {
+    new RGAIteratorUnordered(this.hashMap)
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class RGA
+  localRGAs : [LocalRGA]
+
+  def init() : void {
+    this.localRGAs = new [LocalRGA](numcores());
+    repeat i <- |this.localRGAs| {
+        this.localRGAs[i] = new LocalRGA(i)
+    };
+    this.wait(); --TODO do we need to wait here?
+    repeat i <- |this.localRGAs| {
+      (this.localRGAs[i]).setup(this.localRGAs)
+    };
+  }
+
+  def append(elem : int) : Fut NodeID {
+    (this.localRGAs[core()]).append(elem)
+  }
+
+  def addAfter(index : NodeID, elem : int) : Fut NodeID {
+    (this.localRGAs[core()]).addAfter(index, elem)
+  }
+
+  def set(index : NodeID, elem : int) : void {
+    (this.localRGAs[core()]).set(index, elem)
+  }
+
+  def remove(index : NodeID) : void {
+    (this.localRGAs[core()]).remove(index)
+  }
+
+  def at(index : NodeID) : Fut int {
+    (this.localRGAs[core()]).at(index)
+  }
+
+  def size() : Fut int {
+    (this.localRGAs[core()]).size()
+  }
+
+  def iterator() : Fut RGAIterator {
+    (this.localRGAs[core()]).iterator()
+  }
+
+  def iteratorUnordered() : Fut RGAIteratorUnordered {
+    (this.localRGAs[core()]).iteratorUnordered()
+  }
+
+  def wait() : void {
+    repeat i <- |this.localRGAs| { -- all local have sent their messages
+      get (this.localRGAs[i]).wait()
+    };
+    repeat i <- |this.localRGAs| { -- all local have processed their messages
+      get (this.localRGAs[i]).wait()
+    };
+  }
+
+
+passive class RGAIterator
+  current : RGANode
+  last : RGANode
+  endReached : bool
+  def init(first : RGANode, last : RGANode) : void {
+    this.current = first;
+    this.last = last;
+    this.endReached = false;
+  }
+
+  def next() : RGANode {
+    if (this.current.nodeID.equals(this.last.nodeID)) then {
+      null : RGANode
+    } else {
+      this.current = this.current.next;
+      if (this.current.removed) then {
+        this.next()
+      } else {
+        this.current
+      }
+    }
+  }
+
+passive class RGAIteratorUnordered
+  hashMapIterator : HashMapIterator_NodeID_RGANode
+  def init(hashMap : HashMap_NodeID_RGANode) : void {
+    this.hashMapIterator = hashMap.iterator()
+  }
+
+  def next() : RGANode {
+    let entry = this.hashMapIterator.next();
+    if (entry == null) then {
+      null : RGANode
+    } else {
+      if (entry.value.removed) then {
+        this.next()
+      } else {
+        entry.value
+      }
+    }
+  }
+
+{- class Main {
+  def main() : void {
+    ()
+  }
+} -}

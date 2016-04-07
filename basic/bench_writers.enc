@@ -1,0 +1,136 @@
+import all
+
+
+class WriterSequential
+  def go(rga : RGA, v : int ) : void {
+    let start = rga.append(v);
+    repeat i <- 1000 {
+      start = rga.addAfter(get start, v);
+    }
+  }
+
+class ReaderSum
+  def go(rga : RGA, r : int, w : int, orderedIter : bool) : void {
+     repeat i <- 10 {
+      let iter = if (orderedIter) then {
+                   get rga.iterator()
+                } else  {
+                  null : RGAIterator
+                };
+      let uiter = if (not orderedIter) then {
+                    get rga.iteratorUnordered()
+                  } else {
+                    null : RGAIteratorUnordered
+                  };
+      let break = true;
+      let c = 0;
+      while (not break) {
+        let node = if(orderedIter) then { iter.next() } else { uiter.next() };
+        if (node == null) then {
+          break = true
+        } else {
+          if (node.elem == r) then {
+            c = c + 1
+          }
+        }
+      };
+      let last = rga.append(w);
+      rga.addAfter(get last, c);
+    }
+  }
+
+class WriterRandom
+  def go(rga : RGA, randSeq : [int], v : int, orderedIter : bool) : void {
+    repeat i <- |randSeq| {
+      let iter = if (orderedIter) then get rga.iterator() else null;
+      let uiter = if (not orderedIter) then get rga.iteratorUnordered() else null;
+      let size = get rga.size();
+      let counter = randSeq[i] % size;
+      let break = false;
+      let location = null : NodeID;
+      while (not break) {
+        let node = {if(orderedIter) then iter.next() else uiter.next() };
+        if (node == null) then {
+          break = true
+        } else {
+          if (counter == 0) then {
+            location = node.nodeID
+          };
+          counter = counter - 1;
+        }
+      };
+
+      if (location != null) then {
+        repeat i <- 10 {
+          location = get rga.addAfter(location, v)
+        }
+      }
+    }
+  }
+
+class Remover
+  def go(rga : RGA, v : int) : void {
+    repeat i <- 3 {
+      let iter = get rga.iterator();
+      let break = false;
+      while (not break) {
+        let node = iter.next();
+        if (node == null) then {
+          break = true
+        } else {
+          if (node.elem == v) then {
+            rga.remove(node.nodeID)
+          }
+        }
+      }
+    }
+  }
+
+class Replacer
+  def go(rga : RGA, v : int, replacement : int) : void {
+    repeat i <- 3 {
+      let iter = get rga.iterator();
+      let break = false;
+      while (not break) {
+        let node = iter.next();
+        if (node == null) then {
+          break = true
+        } else {
+          if (node.elem == v) then {
+            rga.set(node.nodeID, replacement)
+          }
+        }
+      }
+    }
+  }
+
+class Main {
+  def main() : void {
+    let rga = new RGA();
+    let r1 = randomSeq(50, 0, 10000, 967483);
+    let r2 = randomSeq(50, 0, 10000, 634523);
+    let waits = new [Fut void](2);
+    tic();
+    waits[0] = (new WriterSequential()).go(rga, 1);
+    waits[1] = (new ReaderSum()).go(rga, 1, 8, true);
+    --waits[2] = (new ReaderSum()).go(rga, 1, 9, false);
+    --waits[3] = (new WriterRandom()).go(rga, r1, 2, false);
+    --waits[4] = (new WriterRandom()).go(rga, r1, 3, true);
+
+    repeat i <- |waits| {
+      get waits[i]
+    };
+    rga.wait();
+    print("Elapsed time: {}\n", toc());
+    let iter = get rga.iterator();
+    let break = false;
+    while (not break) {
+      let node = iter.next();
+      if (node == null) then {
+        break = true
+      } else {
+        print("{}", node.elem);
+      }
+    }
+  }
+}

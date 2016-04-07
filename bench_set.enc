@@ -59,8 +59,8 @@ class Main
 
     repeat i <- runs {
       new Runner<ActiveHashSet<int>>(new ActiveHashSet<int>(eq, intToInt), "HashSet", adds, hashSetAdd, hashSetWait, hashSetContains);
-      --new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait, divTimeContains);
-      --new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait, opOrContains);
+      new Runner<DivTimeSet<int>>(new DivTimeSet<int>(eq, intToInt), "DivTimeSet", adds, divTimeAdd, divTimeWait, divTimeContains);
+      new Runner<OpOrSet<int>>(new OpOrSet<int>(eq, intToInt), "OpOrSet", adds, opOrAdd, opOrWait, opOrContains);
 
     }
   }
