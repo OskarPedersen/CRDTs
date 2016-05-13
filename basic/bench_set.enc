@@ -28,13 +28,36 @@ class OpOrSetWorker
 
   def wait() : void ()
 
+class SubSetWorker
+    def init(set : SubSet, adds : int) : void {
+      repeat i <- adds {
+        set.add(i)
+      }
+    }
+
+    def wait() : void ()
+
 class Main
   def main() : void {
-    let runs = 10;
+    let runs = 1;
     let adds = 100000;
     let workers = 4;
 
     repeat i <- runs {
+      let subSet = new SubSet();
+      let subSetWorkers = new [SubSetWorker](workers);
+      tic();
+      repeat i <- |subSetWorkers| {
+        subSetWorkers[i] = new SubSetWorker(subSet, adds);
+      };
+      repeat i <- |subSetWorkers| {
+        get (subSetWorkers[i]).wait()
+      };
+      subSet.wait();
+      print("SubSet: {} ms\n", toc());
+
+
+
       let hashSet = new ActiveHashSet_int();
       let hashSetWorkers = new [ActiveHashSetWorker](workers);
       tic();

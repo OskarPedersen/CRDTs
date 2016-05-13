@@ -1,0 +1,69 @@
+bundle set_sub where
+-- Based on the set in "An efficient parallel set container for multicore architectures"
+
+class PrivateSubSet -- TODO this is currently exactly like an active hash set
+                    -- Switch to that if no extra needs to be added
+  hashSet : HashSet_int
+
+  def init() : void {
+    this.hashSet = new HashSet_int()
+  }
+
+  def add(elem : int) : void {
+    this.hashSet.add(elem);
+  }
+
+  def remove(elem : int) : void {
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet_int) : void {
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : int) : bool {
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.hashSet.size()
+  }
+
+  def wait() : bool {
+    true
+  }
+
+
+passive class SubSet
+  subSets : [PrivateSubSet]
+
+  def init() : void {
+    let nc = numcores();
+    this.subSets = new [PrivateSubSet](nc);
+    repeat i <- nc {
+      this.subSets[i] = new PrivateSubSet()
+    }
+
+  }
+
+  def add(elem : int) : void {
+    (this.subSets[this.hash(elem)]).add(elem)
+  }
+
+  def remove(elem : int) : void {
+    (this.subSets[this.hash(elem)]).remove(elem)
+  }
+
+  def contains(elem : int) : Fut bool {
+    (this.subSets[this.hash(elem)]).contains(elem)
+  }
+
+  def wait() : void {
+    repeat i <- |this.subSets| {
+      get (this.subSets[i]).wait();
+    }
+  }
+
+  def hash(elem : int) : int {
+    elem % |this.subSets| --TODO better hash function
+  }
