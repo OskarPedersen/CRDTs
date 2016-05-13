@@ -30,7 +30,7 @@ class OpOrSetWorker
 
 class Main
   def main() : void {
-    let runs = 20;
+    let runs = 10;
     let adds = 100000;
     let workers = 4;
 

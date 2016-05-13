@@ -112,7 +112,7 @@ class LocalRGA
       let left = node;
       let right = left.next;
       let newNodeId = new NodeID(this.id, this.nextNodeID(), false);
-      repeat i <- |this.localRGAs|{
+      repeat i <- |this.localRGAs| {
         if (this.id != i) then {
           (this.localRGAs[i]).addDownstream(left.nodeID, right.nodeID, elem, newNodeId);
           ()

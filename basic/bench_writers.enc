@@ -112,7 +112,8 @@ class Main {
     let waits = new [Fut void](2);
     tic();
     waits[0] = (new WriterSequential()).go(rga, 1);
-    waits[1] = (new ReaderSum()).go(rga, 1, 8, true);
+    waits[1] = (new WriterSequential()).go(rga, 2);
+    --waits[1] = (new ReaderSum()).go(rga, 1, 8, true);
     --waits[2] = (new ReaderSum()).go(rga, 1, 9, false);
     --waits[3] = (new WriterRandom()).go(rga, r1, 2, false);
     --waits[4] = (new WriterRandom()).go(rga, r1, 3, true);
