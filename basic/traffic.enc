@@ -1,0 +1,194 @@
+import all
+
+passive class VertexPair
+  a : int
+  b : int
+
+  def init(a : int, b : int) : void {
+    this.a = min(a, b);
+    this.b = max(a, b);
+  }
+
+  def equals(vp : VertexPair) : bool {
+    (this.a == vp.a) and (this.b == vp.b)
+  }
+
+  def toInt() : int {
+    this.a + this.b -- TODO better hash? function ex a +  b * 73
+  }
+
+class RoadGraph
+  vertices : HashSet_int
+  edges : HashMap_VertexPair_int
+
+  def init(numVertex : int) : void {
+    this.vertices = new HashSet_int();
+    repeat i <- numVertex {
+      this.vertices.add(i);
+    };
+    this.edges = new HashMap_VertexPair_int();
+    let min = 0;
+    let max = 1;
+    let seed = 7894;
+    let randomValues = randomSeq(numVertex * numVertex, min, max, seed);
+    let initialEdgeWeight = 100;
+    repeat i <- numVertex {
+      repeat j <- numVertex {
+        let r = randomValues[i * numVertex + j];
+        if ((i < j) and (r == 1)) then {
+          let pair = new VertexPair(i, j);
+          -- TODO weight i,j == j,i,   i < j
+          this.edges.put(pair, initialEdgeWeight);
+          -- TODO make sure that graph is connected
+        }
+      }
+    }
+
+    def getWeight(vertex1 : int, vertex2 : int) : int {
+      this.edges.getValue(new VertexPair(vertex1, vertex2))
+    }
+
+  }
+
+passive class FromTo
+  from : int
+  to : int
+
+class ShortestPaths --TODO will this class be more than active hashmap?
+  map : HashMap_FromTo_int
+
+  def init() : void {
+    this.map = new HashMap_FromTo_int();
+  }
+
+  def getNextVertex(current : int, goal : int) : int {
+    let next = this.map.getValue(new FromTo(current, goal));
+    next; -- TODO how to handle if no path has been created yet
+  }
+
+class UpdateQueue
+  list : List_FromTo
+  def init(numVertex : int) : void {
+    repeat i <- numVertex {
+      repeat j <- numVertex {
+        if (i != j) then {
+          this.push(new FromTo(i, j))
+        }
+      }
+    }
+  }
+
+  def push(ft : FromTo) : void {
+    this.list.add(ft)
+  }
+
+  def pop() : FromTo {
+    let size = this.list.size();
+    if (size > 0) {
+      let path = this.list.at(size - 1);
+      this.list.remove(size - 1);
+      path;
+    } else {
+      null : FromTo
+    }
+  }
+
+class PathWorker
+  def init() : void {
+
+  }
+
+  def start(updateQueue : UpdateQueue) : void {
+    while (true) { -- how/when should this end?
+      let ft = updateQueue.pop();
+      if (ft == null) {
+        sleep(10); -- TODO what is best to do here?
+      } else {
+          this.calculatePath(ft)
+      }
+    }
+  }
+
+  def calculatePath(ft : FromTo) : void {
+    -- TODO Dijkstras or something
+  }
+
+class WeightHandler
+  edges : [int]
+  def init() : void {
+
+  }
+
+  def start(roadGraph : RoadGraph) : void {
+    while(true) { --TODO how/when to end this loop
+      sleep(50); -- TODO how much to sleep here
+      int weight = roadGraph.getWeight(edges[?], edges[?]);
+      roadGraph.
+
+    }
+    --sleep
+    --change weight, push paths to update queue
+    --repeat
+  }
+
+class Car
+  goal : int
+  next : int
+  current : int
+
+  def init(start : int, next : int, goal : int) : void {
+    this.current = start;
+    this.next = next;
+    this.goal = goal;
+  }
+
+  def travel(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : bool {
+    let goalReached = false;
+    while (not goalReached) {
+      let time = roadGraph.getWeight(this.current, this.next);
+      if (time == -1) then {
+        print("Bad edge in travel in Car. Current: {}, next: {}", this.current, this.next);
+      } else {
+        sleep(time);
+      };
+      this.current = this.next;
+      if (this.current == this.goal) then {
+        goalReached = true;
+      } else {
+        this.next = shortestPaths.getNextVertex(this.current, this.goal);
+      }
+    };
+    true
+  }
+
+class Main {
+  def main() : void {
+    let numVertex = 5;
+    let roadGraph = new RoadGraph(numVertex);
+    let sp = new ShortestPaths();
+    let uq = new UpdateQueue(numVertex);
+    let wh = new WeightHandler();
+    let pathWorkers = new [PathWorker](4);
+    repeat i <- |pathWorkers| {
+      pathWorkers[i] = new PathWorker();
+    };
+    let numCars = 10;
+    let carFuts = new [Fut bool](numCars);
+    let cars = new [Car](numCars);
+
+    repeat i <- numCars {
+      cars[i] = new Car(i % numVertex);
+    };
+    tic();
+    wh.start();
+    repeat i <- |pathWorkers| {
+      (pathWorkers[i]).start();
+    };
+    repeat i <- numCars {
+      carFuts[i] = (cars[i]).travel();
+    };
+    let time = toc();
+    print("Time: {}", time);
+
+  }
+}
