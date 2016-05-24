@@ -1,0 +1,36 @@
+import all
+
+class __SET__Worker
+  def start(set : __SET__, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
+-- TODO run each set, fix them, so that program ends when time is printed
+
+class Main
+  def main() : void {
+    let runs = __RUNS__;
+    let adds = __OPERATIONS__;
+    let workers = __WORKERS__;
+
+    repeat i <- runs {
+      let set = new __SET__();
+      let setWorkers = new [__SET__Worker](workers);
+      tic();
+      repeat i <- |setWorkers| {
+        setWorkers[i] = new __SET__Worker()
+      };
+      repeat i <- |setWorkers| {
+        (setWorkers[i]).start(set, adds)
+      };
+      repeat i <- |setWorkers| {
+        get (setWorkers[i]).wait()
+      };
+      set.wait();
+      print("__SET__: {} ms\n", toc());
+    }
+  }

@@ -1,21 +1,6 @@
 import all
 
-passive class VertexPair
-  a : int
-  b : int
 
-  def init(a : int, b : int) : void {
-    this.a = min(a, b);
-    this.b = max(a, b);
-  }
-
-  def equals(vp : VertexPair) : bool {
-    (this.a == vp.a) and (this.b == vp.b)
-  }
-
-  def toInt() : int {
-    this.a + this.b -- TODO better hash? function ex a +  b * 73
-  }
 
 class RoadGraph
   vertices : HashSet_int
@@ -58,9 +43,6 @@ class RoadGraph
     this.edges.put(vp, newWeight);
   }
 
-passive class FromTo
-  from : int
-  to : int
 
 class ShortestPaths --TODO will this class be more than just an active hashmap?
   map : HashMap_FromTo_int

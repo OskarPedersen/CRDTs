@@ -1,0 +1,36 @@
+import all
+
+class OpOrSetWorker
+  def start(set : OpOrSet, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
+
+
+class Main
+  def main() : void {
+    let runs = 1;
+    let adds = 1000000;
+    let workers = 4;
+
+    repeat i <- runs {
+      let set = new OpOrSet();
+      let setWorkers = new [OpOrSetWorker](workers);
+      tic();
+      repeat i <- |setWorkers| {
+        setWorkers[i] = new OpOrSetWorker()
+      };
+      repeat i <- |setWorkers| {
+        (setWorkers[i]).start(set, adds)
+      };
+      repeat i <- |setWorkers| {
+        get (setWorkers[i]).wait()
+      };
+      set.wait();
+      print("OpOrSet: {} ms\n", toc());
+    }
+  }

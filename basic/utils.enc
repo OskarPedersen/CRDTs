@@ -73,6 +73,13 @@ def numcores() : int {
   embed int c_numcores(); end
 
 }
+def min(a : int, b : int) : int {
+    if (a < b) then {
+      a
+    } else {
+      b
+    }
+}
 
 def max(a : int, b : int) : int {
     if (a > b) then {

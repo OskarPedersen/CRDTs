@@ -1,0 +1,36 @@
+import all
+
+class DivTimeSetWorker
+  def start(set : DivTimeSet, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
+
+
+class Main
+  def main() : void {
+    let runs = 1;
+    let adds = 1000000;
+    let workers = 4;
+
+    repeat i <- runs {
+      let set = new DivTimeSet();
+      let setWorkers = new [DivTimeSetWorker](workers);
+      tic();
+      repeat i <- |setWorkers| {
+        setWorkers[i] = new DivTimeSetWorker()
+      };
+      repeat i <- |setWorkers| {
+        (setWorkers[i]).start(set, adds)
+      };
+      repeat i <- |setWorkers| {
+        get (setWorkers[i]).wait()
+      };
+      set.wait();
+      print("DivTimeSet: {} ms\n", toc());
+    }
+  }

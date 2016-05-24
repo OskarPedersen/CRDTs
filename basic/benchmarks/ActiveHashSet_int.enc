@@ -1,0 +1,36 @@
+import all
+
+class ActiveHashSet_intWorker
+  def start(set : ActiveHashSet_int, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
+
+
+class Main
+  def main() : void {
+    let runs = 1;
+    let adds = 1000000;
+    let workers = 4;
+
+    repeat i <- runs {
+      let set = new ActiveHashSet_int();
+      let setWorkers = new [ActiveHashSet_intWorker](workers);
+      tic();
+      repeat i <- |setWorkers| {
+        setWorkers[i] = new ActiveHashSet_intWorker()
+      };
+      repeat i <- |setWorkers| {
+        (setWorkers[i]).start(set, adds)
+      };
+      repeat i <- |setWorkers| {
+        get (setWorkers[i]).wait()
+      };
+      set.wait();
+      print("ActiveHashSet_int: {} ms\n", toc());
+    }
+  }
