@@ -31,32 +31,40 @@ class RoadGraph
     let max = 1;
     let seed = 7894;
     let randomValues = randomSeq(numVertex * numVertex, min, max, seed);
+    let randomInitial = randomSeq(numVertex, 0, numVertex - 1, 12845);
     let initialEdgeWeight = 100;
-    repeat i <- numVertex {
+    repeat i <- numVertex { -- This makes the graph connected
+      if (i != 0) then {
+        let pair = new VertexPair(i, randomInitial[i] % i);
+        this.edges.put(pair, initialEdgeWeight);
+      }
+    };
+    repeat i <- numVertex { -- This adds some random edges (some may be duolicates)
       repeat j <- numVertex {
         let r = randomValues[i * numVertex + j];
         if ((i < j) and (r == 1)) then {
           let pair = new VertexPair(i, j);
-          -- TODO weight i,j == j,i,   i < j
           this.edges.put(pair, initialEdgeWeight);
-          -- TODO make sure that graph is connected
         }
       }
     }
+  }
 
-    def getWeight(vertex1 : int, vertex2 : int) : int {
-      this.edges.getValue(new VertexPair(vertex1, vertex2))
-    }
+  def getWeight(vp : VertexPair) : int {
+    this.edges.getValue(vp);
+  }
 
+  def updateWeight(vp : VertexPair, newWeight : int) : void {
+    this.edges.put(vp, newWeight);
   }
 
 passive class FromTo
   from : int
   to : int
 
-class ShortestPaths --TODO will this class be more than active hashmap?
+class ShortestPaths --TODO will this class be more than just an active hashmap?
   map : HashMap_FromTo_int
-
+  -- TODO this could be just a matrix (almost entierly filled)
   def init() : void {
     this.map = new HashMap_FromTo_int();
   }
@@ -84,7 +92,7 @@ class UpdateQueue
 
   def pop() : FromTo {
     let size = this.list.size();
-    if (size > 0) {
+    if (size > 0) then {
       let path = this.list.at(size - 1);
       this.list.remove(size - 1);
       path;
@@ -95,13 +103,13 @@ class UpdateQueue
 
 class PathWorker
   def init() : void {
-
+    ()
   }
 
   def start(updateQueue : UpdateQueue) : void {
     while (true) { -- how/when should this end?
       let ft = updateQueue.pop();
-      if (ft == null) {
+      if (ft == null) then {
         sleep(10); -- TODO what is best to do here?
       } else {
           this.calculatePath(ft)
@@ -110,25 +118,47 @@ class PathWorker
   }
 
   def calculatePath(ft : FromTo) : void {
-    -- TODO Dijkstras or something
+    false-- TODO Dijkstras or something
   }
 
 class WeightHandler
-  edges : [int]
+  randomEdges : [VertexPair]
+  randomWeightDeltas : [int]
   def init() : void {
+    -- TODO set up random edges
 
+    let maxDelta = 50;
+    let wd = randomSeq(20, 0, maxDelta * 2, 29036);
+    randomWeightDeltas = new [int](|wd|);
+    repeat i <- |wd| {
+      randomWeightDeltas[i] = wd[i] - maxDelta;
+    }
   }
 
   def start(roadGraph : RoadGraph) : void {
+    let randomEdgesIndex = 0;
+    let randomWeightDeltasIndex = 0;
     while(true) { --TODO how/when to end this loop
       sleep(50); -- TODO how much to sleep here
-      int weight = roadGraph.getWeight(edges[?], edges[?]);
-      roadGraph.
+      let vp = randomEdges[i];
+      let weight = roadGraph.getWeight(vp);
+      if (weight != -1) then { -- TODO make sure to only have valid edges here
+        --TODO add paths to update queue
+        let delta = randomWeightDeltas[randomWeightDeltasIndex];
+        roadGraph.updateWeight(vp, max(0, weight + delta));
+      };
+
+      randomEdgesIndex = randomEdgesIndex + 1;
+      if (randomEdgesIndex >= |randomEdges|) then {
+        randomEdgesIndex = 0;
+      };
+
+      randomWeightDeltasIndex = randomWeightDeltasIndex + 1;
+      if (randomWeightDeltasIndex >= |randomWeightDeltas|) then {
+        randomWeightDeltasIndex = 0;
+      };
 
     }
-    --sleep
-    --change weight, push paths to update queue
-    --repeat
   }
 
 class Car
@@ -186,6 +216,9 @@ class Main {
     };
     repeat i <- numCars {
       carFuts[i] = (cars[i]).travel();
+    };
+    repeat i <- numCars {
+      get carFuts[i];
     };
     let time = toc();
     print("Time: {}", time);

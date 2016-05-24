@@ -1,0 +1,33 @@
+import all
+
+class __SET__Worker
+  def init(set : __SET__, adds : int) : void {
+    repeat i <- adds {
+      set.add(i)
+    }
+  }
+
+  def wait() : void ()
+
+
+
+class Main
+  def main() : void {
+    let runs = 1;
+    let adds = 100000;
+    let workers = 4;
+
+    repeat i <- runs {
+      let set = new __SET__();
+      let setWorkers = new [__SET__Worker](workers);
+      tic();
+      repeat i <- |setWorkers| {
+        setWorkers[i] = new __SET__Worker(set, adds);
+      };
+      repeat i <- |setWorkers| {
+        get (setWorkers[i]).wait()
+      };
+      set.wait();
+      print("__SET__: {} ms\n", toc());
+    }
+  }

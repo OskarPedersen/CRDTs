@@ -100,7 +100,7 @@ def exitMsg(msg : String) : void {
 }
 
 def sleep(milliseconds : int) : void {
-    let ret = embed int nanosleep((const struct timespec[]){{0, #{milliseconds}*1000000L}}, NULL); end
+    let ret = embed int nanosleep((const struct timespec[]){{0, #{milliseconds}*1000000L}}, NULL); end;
     if (ret == -1) then {
       print("Sleep failed");
     }

@@ -391,3 +391,59 @@ passive class List_HashMapEntry_VertexPair_int
       exitMsg("Index out of bounds");
     }
   }
+passive class List_FromTo
+  elems : [FromTo]
+  size : int
+
+  def init() : void {
+    this.elems = new [FromTo](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [FromTo](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : FromTo) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(i : int) : FromTo {
+    this.boundsCheck(i);
+    this.elems[i]
+  }
+
+  def set(i : int, elem : FromTo) : void {
+    this.boundsCheck(i);
+    this.elems[i] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(i : int) : void {
+    if ((i < 0) or (i >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }
