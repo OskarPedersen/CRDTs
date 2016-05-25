@@ -1,5 +1,5 @@
-bodys = ['repeat i <- operations { set.add(i) }']
-names = ['add']
+bodys = ['repeat i <- operations { set.add(i) }',   'repeat i <- operations { set.add(i) }; repeat i <- operations { set.contains(i) }'  ]
+names = ['add',                                     'add_contains']
 j = 0
 for b in bodys:
     n = names[j]
@@ -11,7 +11,7 @@ for b in bodys:
     bs_inf.close()
     i = 0
     for t in bs_t:
-        bs_outf = open(n + t + '.enc', 'w')
+        bs_outf = open(n + '-' + t + '.enc', 'w')
         res = bs_gen.replace('__SET__', t)
         res = res.replace('__RUNS__', '1')
         res = res.replace('__WORKERS__', '4')
