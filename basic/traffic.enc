@@ -1,7 +1,5 @@
 import all
 
-
-
 class RoadGraph
   vertices : HashSet_int
   edges : HashMap_VertexPair_int
@@ -22,14 +20,16 @@ class RoadGraph
       if (i != 0) then {
         let pair = new VertexPair(i, randomInitial[i] % i);
         this.edges.put(pair, initialEdgeWeight);
+        -- TODO add to neighbour map
       }
     };
-    repeat i <- numVertex { -- This adds some random edges (some may be duolicates)
+    repeat i <- numVertex { -- This adds some random edges (some may be duplicates)
       repeat j <- numVertex {
         let r = randomValues[i * numVertex + j];
         if ((i < j) and (r == 1)) then {
           let pair = new VertexPair(i, j);
           this.edges.put(pair, initialEdgeWeight);
+          -- TODO add to neighbour map
         }
       }
     }
@@ -84,8 +84,9 @@ class UpdateQueue
   }
 
 class PathWorker
-  def init() : void {
-    ()
+  numVertex : int
+  def init(numVertex : int) : void {
+    this.numVertex = numVertex
   }
 
   def start(updateQueue : UpdateQueue) : void {
@@ -99,8 +100,50 @@ class PathWorker
     }
   }
 
-  def calculatePath(ft : FromTo) : void {
-    false-- TODO Dijkstras or something
+  def calculatePath(ft : FromTo, nextVertexMap : HashMap_FromTo_int,
+      neighbourMap : HashMap_int_List_int) : void {
+    let dist = new [int](this.numVertex);
+    let prev = new [int](this.numVertex);
+    let Q = new List_int();
+    dist[ft.from] = 0;
+    repeat i <- this.numVertex {
+      if (i != ft.from) then {
+        dist[i] = intMax();
+        prev[i] = -1;
+      };
+      Q.add(i)
+    };
+
+    while (Q.size() > 0) {
+      let min = intMax();
+      let minVertex = -1;
+      let minIndex = -1;
+      repeat i <- Q.size() {
+        if (dist[Q.at(i)] < min) then {
+          min = dist[Q.at(i)];
+          minVertex = Q.at(i);
+          minIndex = i;
+        }
+      };
+      Q.remove(minIndex);
+      let neighbours = neighbourMap.getValue(minVertex);
+      repeat i <- neighbours.size() {
+        let alt = dist[minVertex] + map.getValue(new FromTo(minVertex, neighbours.get(i)));
+        if (alt < dist[neighbours.get(i)]) then {
+          dist[neighbours.get(i)] = alt;
+          prev[neighbours.get(i)] = minVertex;
+        }
+      }
+    };
+
+    let c = ft.to;
+    let p = prev[c]; -- TODO Will this get you the last before the goal? what if from and to are neighbours
+    while (p != -1) {
+      nextVertexMap.put(new FromTo(p, ft.to), c);
+      nextVertexMap.put(new FromTo(c, ft.from), p); -- The reverse path
+      p = c;
+      c = prev[c];
+    }
   }
 
 class WeightHandler

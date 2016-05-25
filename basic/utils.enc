@@ -112,3 +112,11 @@ def sleep(milliseconds : int) : void {
       print("Sleep failed");
     }
 }
+
+def intMax() : int {
+  9223372036854775807
+}
+
+def intMin() : int {
+  -intMax() - 1;
+}

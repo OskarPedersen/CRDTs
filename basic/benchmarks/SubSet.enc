@@ -10,11 +10,10 @@ class SubSetWorker
   def wait() : void ()
 
 
-
 class Main
   def main() : void {
     let runs = 1;
-    let adds = 1000000;
+    let adds = 300000;
     let workers = 4;
 
     repeat i <- runs {
@@ -30,7 +29,7 @@ class Main
       repeat i <- |setWorkers| {
         get (setWorkers[i]).wait()
       };
-      set.wait();
+       set.wait();
       print("SubSet: {} ms\n", toc());
     }
   }

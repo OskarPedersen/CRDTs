@@ -9,7 +9,6 @@ class __SET__Worker
 
   def wait() : void ()
 
--- TODO run each set, fix them, so that program ends when time is printed
 
 class Main
   def main() : void {
@@ -30,7 +29,7 @@ class Main
       repeat i <- |setWorkers| {
         get (setWorkers[i]).wait()
       };
-      set.wait();
+      __WAIT_GET__ set.wait();
       print("__SET__: {} ms\n", toc());
     }
   }
