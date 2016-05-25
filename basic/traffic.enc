@@ -2,25 +2,26 @@ import all
 
 class RoadGraph
   vertices : HashSet_int
-  edges : HashMap_VertexPair_int
+  edges : ActiveHashMap_VertexPair_int
+  neighbourMap : ActiveHashMap_int_List_int
 
   def init(numVertex : int) : void {
     this.vertices = new HashSet_int();
     repeat i <- numVertex {
       this.vertices.add(i);
     };
-    this.edges = new HashMap_VertexPair_int();
+    this.edges = new ActiveHashMap_VertexPair_int();
+    this.neighbourMap = new ActiveHashMap_int_List_int();
     let min = 0;
     let max = 1;
     let seed = 7894;
     let randomValues = randomSeq(numVertex * numVertex, min, max, seed);
     let randomInitial = randomSeq(numVertex, 0, numVertex - 1, 12845);
-    let initialEdgeWeight = 100;
+
     repeat i <- numVertex { -- This makes the graph connected
       if (i != 0) then {
         let pair = new VertexPair(i, randomInitial[i] % i);
-        this.edges.put(pair, initialEdgeWeight);
-        -- TODO add to neighbour map
+        this.addEdge(pair);
       }
     };
     repeat i <- numVertex { -- This adds some random edges (some may be duplicates)
@@ -28,10 +29,27 @@ class RoadGraph
         let r = randomValues[i * numVertex + j];
         if ((i < j) and (r == 1)) then {
           let pair = new VertexPair(i, j);
-          this.edges.put(pair, initialEdgeWeight);
-          -- TODO add to neighbour map
+          this.addEdge(pair);
         }
       }
+    }
+  }
+
+  def addEdge(pair : VertexPair) : void {
+    let initialEdgeWeight = 100;
+    this.edges.put(pair, initialEdgeWeight);
+    this.addNeighbour(pair.a, pair.b);
+    this.addNeighbour(pair.b, pair.a);
+  }
+
+  def addNeighbour(vertex : int, neighbour : int) : void {
+    let neighbourList = this.neighbourMap.getValue(vertex);
+    if (neighbourList == null) then {
+      neighbourList = new List_int();
+      neighbourList.add(neighbour);
+      this.neighbourMap.put(vertex)
+    } else {
+      neighbourList.add(neighbour); -- TODO will this work, or do we need to create a new copy of the list
     }
   }
 
@@ -63,6 +81,8 @@ class UpdateQueue
       repeat j <- numVertex {
         if (i != j) then {
           this.push(new FromTo(i, j))
+          -- TODO i j == j i,
+          -- should we then only push one of them?
         }
       }
     }
@@ -100,8 +120,8 @@ class PathWorker
     }
   }
 
-  def calculatePath(ft : FromTo, nextVertexMap : HashMap_FromTo_int,
-      neighbourMap : HashMap_int_List_int) : void {
+  def calculatePath(ft : FromTo, nextVertexMap : ActiveHashMap_FromTo_int,
+      neighbourMap : ActiveHashMap_int_List_int) : void {
     let dist = new [int](this.numVertex);
     let prev = new [int](this.numVertex);
     let Q = new List_int();
@@ -149,8 +169,14 @@ class PathWorker
 class WeightHandler
   randomEdges : [VertexPair]
   randomWeightDeltas : [int]
-  def init() : void {
-    -- TODO set up random edges
+  def init(numVertex : int, neighbourMap : ActiveHashMap_int_List_int) : void {
+    let vertices = randomSeq(numVertex, 0, numVertex - 1, 8264);
+    let neighbours = randomSeq(|vertices|, 0, intMax(), 9465);
+    this.randomEdges = new [VertexPair](|vertices|);
+    repeat i <- |vertices| {
+      let nl =  neighbourMap.getValue(vertices[i]);
+      randomEdges[i] = new VertexPair(vertices[i], nl.at(neighbours[i] % nl.size()));
+    };
 
     let maxDelta = 50;
     let wd = randomSeq(20, 0, maxDelta * 2, 29036);
@@ -160,17 +186,24 @@ class WeightHandler
     }
   }
 
-  def start(roadGraph : RoadGraph) : void {
+  def start(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : void {
     let randomEdgesIndex = 0;
     let randomWeightDeltasIndex = 0;
-    while(true) { --TODO how/when to end this loop
+    while(true) { --TODO how/when to end this loop, ended by exit in main now
       sleep(50); -- TODO how much to sleep here
       let vp = randomEdges[i];
       let weight = roadGraph.getWeight(vp);
-      if (weight != -1) then { -- TODO make sure to only have valid edges here
+      if (weight != -1) then { --All edges should be valid
         --TODO add paths to update queue
         let delta = randomWeightDeltas[randomWeightDeltasIndex];
         roadGraph.updateWeight(vp, max(0, weight + delta));
+        if (delta > 0) then {
+          this.recomputePathsIncreased();
+        } else if (delta < 0) then {
+          this.recomputePathsDecreased();
+        }
+      } else {
+        print("Non valid edge in start in WeightHandler");
       };
 
       randomEdgesIndex = randomEdgesIndex + 1;
@@ -182,8 +215,23 @@ class WeightHandler
       if (randomWeightDeltasIndex >= |randomWeightDeltas|) then {
         randomWeightDeltasIndex = 0;
       };
-
     }
+  }
+
+  def recomputePathsIncreased(vp : VertexPair) : void {
+    repeat i <- numVertex {
+      if (i != vp.a) then {
+        if (shortestPaths.getNextVertex(vp.a, i) == vp.b) then {
+          -- The path from a to i goes through b
+          -- TODO this will NOT find the actual paths going through a to b
+        }
+      }
+    };
+    -- TODO do also for all the reverse paths
+  }
+
+  def recomputePathsDecreased(vp : VertexPair) : void {
+    -- TODO recompute all paths except those already going through a - b
   }
 
 class Car
@@ -247,6 +295,7 @@ class Main {
     };
     let time = toc();
     print("Time: {}", time);
+    embed void exit(EXIT_SUCCESS); end;
 
   }
 }

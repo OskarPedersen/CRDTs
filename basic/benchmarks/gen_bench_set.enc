@@ -1,10 +1,11 @@
 import all
 
 class __SET__Worker
-  def start(set : __SET__, adds : int) : void {
-    repeat i <- adds {
-      set.add(i)
-    }
+  def start(set : __SET__, operations : int) : void {
+    --repeat i <- operations {
+    --  set.add(i)
+    --}
+    __BODY__
   }
 
   def wait() : void ()
@@ -13,7 +14,7 @@ class __SET__Worker
 class Main
   def main() : void {
     let runs = __RUNS__;
-    let adds = __OPERATIONS__;
+    let operations = __OPERATIONS__;
     let workers = __WORKERS__;
 
     repeat i <- runs {
@@ -24,7 +25,7 @@ class Main
         setWorkers[i] = new __SET__Worker()
       };
       repeat i <- |setWorkers| {
-        (setWorkers[i]).start(set, adds)
+        (setWorkers[i]).start(set, operations)
       };
       repeat i <- |setWorkers| {
         get (setWorkers[i]).wait()
