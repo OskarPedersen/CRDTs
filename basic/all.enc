@@ -14,6 +14,19 @@ passive class FromTo
   from : int
   to : int
 
+  def init(from : int, to : int) : void {
+    this.from = from;
+    this.to = to;
+  }
+
+  def equals(ft : FromTo) : bool {
+    (this.from == ft.from) and (this.to == ft.to)
+  }
+
+  def toInt() : int {
+    this.from + this.to -- TODO better hash? function ex a +  b * 73
+  }
+
 passive class VertexPair
   a : int
   b : int

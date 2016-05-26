@@ -1,6 +1,7 @@
 list_t = ['int', 'HashMapEntry_int_int', 'HashMapEntry_int_TimeOp',
     'HashMapEntry_int_HashSet_int', 'HashMapEntry_NodeID_RGANode',
-    'HashMapEntry_NodeID_int', 'HashMapEntry_VertexPair_int', 'FromTo']
+    'HashMapEntry_NodeID_int', 'HashMapEntry_VertexPair_int', 'FromTo',
+    'HashMapEntry_int_List_int', 'HashMapEntry_FromTo_int']
 list_inf = open('gen_list.enc', 'r')
 list_gen = list_inf.read()
 list_inf.close()
@@ -11,12 +12,12 @@ for l in list_t:
 list_outf.close()
 
 
-hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int']
-hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int']
-hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b']
-hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a']
-hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1']
-hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int']
+hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int',              'FromTo']
+hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int',         'int']
+hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b',           'a.equals(b)']
+hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a',                'a.toInt()']
+hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1',              'null']
+hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int', '-1']
 hm_inf = open('gen_hashmap.enc', 'r')
 hm_gen = hm_inf.read()
 hm_inf.close()
@@ -42,8 +43,8 @@ hm_outf.close()
 
 
 
-hs_t = ['int', 'NodeID', 'VertexPair']
-hs_null = ['-1', 'null', 'null']
+hs_t = ['int', 'NodeID', 'VertexPair', 'FromTo']
+hs_null = ['-1', 'null', 'null', 'null']
 hs_inf = open('gen_hashset.enc', 'r')
 hs_gen = hs_inf.read()
 hs_inf.close()

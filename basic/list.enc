@@ -447,3 +447,115 @@ passive class List_FromTo
       exitMsg("Index out of bounds");
     }
   }
+passive class List_HashMapEntry_int_List_int
+  elems : [HashMapEntry_int_List_int]
+  size : int
+
+  def init() : void {
+    this.elems = new [HashMapEntry_int_List_int](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [HashMapEntry_int_List_int](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : HashMapEntry_int_List_int) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(i : int) : HashMapEntry_int_List_int {
+    this.boundsCheck(i);
+    this.elems[i]
+  }
+
+  def set(i : int, elem : HashMapEntry_int_List_int) : void {
+    this.boundsCheck(i);
+    this.elems[i] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(i : int) : void {
+    if ((i < 0) or (i >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }
+passive class List_HashMapEntry_FromTo_int
+  elems : [HashMapEntry_FromTo_int]
+  size : int
+
+  def init() : void {
+    this.elems = new [HashMapEntry_FromTo_int](10);
+    this.size = 0;
+    --print("init this {}\n", this);
+  }
+
+  def realloc() : void {
+    let
+      newElems = new [HashMapEntry_FromTo_int](|this.elems| * 2)
+    in {
+      repeat i <- |this.elems| {
+        newElems[i] = this.elems[i]
+      };
+      this.elems = newElems;
+    }
+  }
+
+  def add(elem : HashMapEntry_FromTo_int) : void {
+    this.size = this.size + 1;
+    if (this.size > |this.elems|) then {
+      this.realloc();
+    };
+    this.elems[this.size - 1] = elem;
+  }
+
+  def at(i : int) : HashMapEntry_FromTo_int {
+    this.boundsCheck(i);
+    this.elems[i]
+  }
+
+  def set(i : int, elem : HashMapEntry_FromTo_int) : void {
+    this.boundsCheck(i);
+    this.elems[i] = elem
+  }
+
+  def remove(i : int) : void {
+    this.boundsCheck(i);
+    repeat index <-this.size - i - 1 {
+      this.elems[i + index] = this.elems[i + index + 1];
+    };
+    this.size = this.size - 1
+  }
+
+  def size() : int {
+    this.size
+  }
+
+  def boundsCheck(i : int) : void {
+    if ((i < 0) or (i >= this.size)) then {
+      exitMsg("Index out of bounds");
+    }
+  }
