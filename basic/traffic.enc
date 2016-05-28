@@ -236,7 +236,7 @@ class WeightHandler
     }
   }
 
-  def start(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : void {
+  def start(roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
     let randomEdgesIndex = 0;
     let randomWeightDeltasIndex = 0;
     while(true) { --TODO how/when to end this loop, ended by exit in main now
@@ -249,9 +249,9 @@ class WeightHandler
         print("WeightHandler: Changing vertex {}-{} from weight {} with delta {}.\n", vp.a, vp.b, weight, delta);
         roadGraph.updateWeight(vp, max(0, min(500, weight + delta)));
         if (delta > 0) then {
-          this.recomputePathsIncreased(vp, shortestPaths);
+          this.recomputePathsIncreased(vp, shortestPaths, updateQueue);
         } else if (delta < 0) then {
-          this.recomputePathsDecreased(vp, shortestPaths);
+          this.recomputePathsDecreased(vp, shortestPaths, updateQueue);
         }
       } else {
         print("Non valid edge in start in WeightHandler");
@@ -269,22 +269,41 @@ class WeightHandler
     }
   }
 
-  def recomputePathsIncreased(vp : VertexPair, shortestPaths : ShortestPaths) : void {
+  def recomputePathsIncreased(vp : VertexPair, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
     repeat i <- this.numVertex {
       if (i != vp.a) then {
         if ((get shortestPaths.getNextVertex(vp.a, i)) == vp.b) then {
           -- The path from a to i goes through b
-          -- TODO this will NOT find the actual paths going through a to b
+          -- TODO this will NOT find all paths going through a to b
+          updateQueue.push(new FromTo(vp.a, i));
+          ()
+        }
+      };
+      if (i != vp.b) then {
+        if ((get shortestPaths.getNextVertex(vp.b, i)) == vp.a) then {
+          updateQueue.push(new FromTo(vp.b, i));
           ()
         }
       }
-    };
-    -- TODO do also for all the reverse paths
+    }
   }
 
-  def recomputePathsDecreased(vp : VertexPair, shortestPaths : ShortestPaths) : void {
-    -- TODO recompute all paths except those already going through a - b
-    ()
+  def recomputePathsDecreased(vp : VertexPair, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
+    -- TODO this does only recompute going to a or b but not through the edge a-b ?
+    repeat i <- this.numVertex {
+      if (i != vp.a) then {
+        if ((get shortestPaths.getNextVertex(vp.a, i)) != vp.b) then {
+          updateQueue.push(new FromTo(vp.a, i));
+          ()
+        }
+      };
+      if (i != vp.b) then {
+        if ((get shortestPaths.getNextVertex(vp.b, i)) != vp.a) then {
+          updateQueue.push(new FromTo(vp.b, i));
+          ()
+        }
+      }
+    }
   }
 
 class Car
@@ -358,7 +377,7 @@ class Main {
     print("Main: Cars created.");
     print("Main: Setup complete.");
     tic();
-    wh.start(roadGraph, sp);
+    wh.start(roadGraph, sp, uq);
     print("Main: weight handler started.");
     repeat i <- |pathWorkers| {
       (pathWorkers[i]).start(uq, get sp.getNextVertexMap(), -- TODO next vertex map, pathworker should maybe access it through shortest paths instead

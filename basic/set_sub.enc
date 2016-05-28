@@ -43,7 +43,6 @@ passive class SubSet
     repeat i <- nc {
       this.subSets[i] = new PrivateSubSet()
     }
-
   }
 
   def add(elem : int) : void {
