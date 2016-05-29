@@ -58,3 +58,16 @@ for t in hs_t:
     hs_outf.write(res)
     i = i + 1
 hs_outf.close()
+
+
+t_set = ['']
+t_inf = open('gen_traffic.enc', 'r')
+t_gen = t_inf.read()
+t_inf.close()
+i = 0
+for t in t_set:
+    t_outf = open('traffic-' + t + '.enc', 'w')
+    res = i_gen.replace('__?__', t)
+    t_outf.write(res)
+    t_outf.close()
+    i = i + 1

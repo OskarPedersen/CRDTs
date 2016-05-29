@@ -1,0 +1,400 @@
+import all
+
+
+class RoadGraph
+  --vertices : HashSet_int
+  edges : ActiveHashMap_VertexPair_int
+  neighbourMap : ActiveHashMap_int_List_int
+
+  def init(numVertex : int) : void {
+    --this.vertices = new HashSet_int();
+    --repeat i <- numVertex {
+    --  this.vertices.add(i);
+    --};
+    this.edges = new ActiveHashMap_VertexPair_int();
+    this.neighbourMap = new ActiveHashMap_int_List_int();
+    let min = 0;
+    let max = 3;
+    let seed = 7894;
+    let randomValues = randomSeq(numVertex * numVertex, min, max, seed);
+    let randomInitial = randomSeq(numVertex, 0, numVertex - 1, 12845);
+    print("RoadGraph: Random values created.");
+    repeat i <- numVertex { -- This makes the graph connected
+      if (i != 0) then {
+        let pair = new VertexPair(i, randomInitial[i] % i);
+        this.addEdge(pair);
+      }
+    };
+    print("RoadGraph: Graph connected.");
+    repeat i <- numVertex { -- This adds some random edges (some may be duplicates)
+      repeat j <- numVertex {
+        let r = randomValues[i * numVertex + j];
+        if ((i < j) and (r == max)) then {
+          let pair = new VertexPair(i, j);
+          this.addEdge(pair);
+        }
+      }
+    };
+    print("RoadGraph: Random edges added");
+    repeat i <- numVertex {
+      repeat j <- numVertex {
+        if (i < j) then {
+          print("RoadGraph: {} - {} = {}\n", i, j, this.getWeight(new VertexPair(i, j)));
+        }
+      }
+    }
+  }
+
+  def getEdges() : ActiveHashMap_VertexPair_int {
+    this.edges
+  }
+
+  def addEdge(pair : VertexPair) : void {
+    let initialEdgeWeight = 100;
+    this.edges.put(pair, initialEdgeWeight);
+    this.addNeighbour(pair.a, pair.b);
+    this.addNeighbour(pair.b, pair.a);
+  }
+
+  def addNeighbour(vertex : int, neighbour : int) : void {
+    let neighbourList = get this.neighbourMap.getValue(vertex);
+    if (neighbourList == null) then {
+      neighbourList = new List_int();
+      neighbourList.add(neighbour);
+      this.neighbourMap.put(vertex, neighbourList);
+    } else {
+      --neighbourList.add(neighbour); -- TODO will this work, or do we need to create a new copy of the list, seams like it dont
+      let newList = new List_int();
+      repeat i <- neighbourList.size() {
+        newList.add(neighbourList.at(i));
+      };
+      newList.add(neighbour);
+      this.neighbourMap.put(vertex, newList);
+    }
+  }
+
+  def getWeight(vp : VertexPair) : int {
+    get this.edges.getValue(vp);
+  }
+
+  def updateWeight(vp : VertexPair, newWeight : int) : void {
+    this.edges.put(vp, newWeight);
+  }
+
+  def getNeighbourMap() : ActiveHashMap_int_List_int {
+    this.neighbourMap
+  }
+
+
+class ShortestPaths --TODO will this class be more than just an active hashmap?
+  map : ActiveHashMap_FromTo_int
+  -- TODO this could be just a matrix (almost entierly filled)
+  def init() : void {
+    this.map = new ActiveHashMap_FromTo_int();
+  }
+
+  def getNextVertex(current : int, goal : int) : int {
+    get this.map.getValue(new FromTo(current, goal));
+    -- TODO how to handle if no path has been created yet
+  }
+
+  def getNextVertexMap() : ActiveHashMap_FromTo_int {
+    this.map
+  }
+
+class UpdateQueue
+  list : List_FromTo
+  def init(numVertex : int) : void {
+    this.list = new List_FromTo();
+    repeat i <- numVertex {
+      repeat j <- numVertex {
+        if (i != j) then {
+          this.push(new FromTo(i, j))
+          -- TODO i j == j i,
+          -- should we then only push one of them?
+        }
+      }
+    }
+  }
+
+  def push(ft : FromTo) : void {
+    this.list.add(ft)
+  }
+
+  def pop() : FromTo {
+    let size = this.list.size();
+    if (size > 0) then {
+      let path = this.list.at(size - 1);
+      this.list.remove(size - 1);
+      path;
+    } else {
+      null : FromTo
+    }
+  }
+
+class PathWorker
+  numVertex : int
+  def init(numVertex : int) : void {
+    this.numVertex = numVertex
+  }
+
+  def start(updateQueue : UpdateQueue, nextVertexMap : ActiveHashMap_FromTo_int,
+      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
+    while (true) { -- how/when should this end?
+      let ft = get updateQueue.pop();
+      if (ft == null) then {
+        --print("PathWorker: Sleeping");
+        sleep(10); -- TODO what is best to do here?
+      } else {
+          print("PathWorker: Calculate path");
+          this.calculatePath(ft, nextVertexMap, neighbourMap, edges);
+          print("PathWorker: Finished calculating path");
+      }
+    }
+  }
+
+  def calculatePath(ft : FromTo, nextVertexMap : ActiveHashMap_FromTo_int,
+      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
+    let dist = new [int](this.numVertex);
+    let prev = new [int](this.numVertex);
+    let Q = new List_int();
+    dist[ft.from] = 0;
+    repeat i <- this.numVertex {
+      if (i != ft.from) then {
+        dist[i] = intMax();
+        prev[i] = -1;
+      };
+      Q.add(i)
+    };
+    print("PathWorker: Temporary path data initialized");
+    let break = false;
+    while ((Q.size() > 0) and (break == false)) {
+      let min = intMax();
+      let minVertex = -1;
+      let minIndex = -1;
+      repeat i <- Q.size() {
+        if (dist[Q.at(i)] <= min) then {
+          min = dist[Q.at(i)];
+          minVertex = Q.at(i);
+          minIndex = i;
+        }
+      };
+      --print("PathWorker: minIndex {}\n", minIndex);
+      Q.remove(minIndex);
+      if (minVertex == ft.to) then {
+        break = true;
+      } else {
+        let neighbours = get neighbourMap.getValue(minVertex);
+        repeat i <- neighbours.size() {
+          let n = neighbours.at(i);
+          --print("PathWorker: n {}\n", n);
+          let edgeDis = get edges.getValue(new VertexPair(minVertex, n));
+          let alt = dist[minVertex] + edgeDis;
+          if (alt < dist[n]) then {
+            dist[n] = alt;
+            prev[n] = minVertex;
+          }
+        }
+      }
+    };
+    print("PathWorker: Goal found");
+
+    let c = ft.to;
+    let p = prev[c]; -- TODO Will this get you the last before the goal? what if from and to are neighbours
+    while (c != ft.from) {
+      print("PathWorker: c {} p {} from {} to {}\n", c, p, ft.from, ft.to);
+      nextVertexMap.put(new FromTo(p, ft.to), c);
+      print("PathWorker: {} -> {} = {}\n", p, ft.to, c);
+      nextVertexMap.put(new FromTo(c, ft.from), p); -- The reverse path
+      print("PathWorker: {} -> {} = {} (reverse)\n", c, ft.from, p);
+      c = p;
+      p = prev[p];
+    };
+    print("PathWorker: Path recreated");
+  }
+
+class WeightHandler
+  randomEdges : [VertexPair]
+  randomWeightDeltas : [int]
+  numVertex : int
+
+  def init(numVertex : int, neighbourMap : ActiveHashMap_int_List_int) : void {
+    this.numVertex = numVertex;
+    let vertices = randomSeq(numVertex, 0, numVertex - 1, 8264);
+    let neighbours = randomSeq(|vertices|, 0, intMax(), 9465);
+    this.randomEdges = new [VertexPair](|vertices|);
+    repeat i <- |vertices| {
+      let nl = get neighbourMap.getValue(vertices[i]);
+      this.randomEdges[i] = new VertexPair(vertices[i], nl.at(neighbours[i] % nl.size()));
+    };
+
+    let maxDelta = 50;
+    let wd = randomSeq(20, 0, maxDelta * 2, 29036);
+    this.randomWeightDeltas = new [int](|wd|);
+    repeat i <- |wd| {
+      this.randomWeightDeltas[i] = wd[i] - maxDelta;
+    }
+  }
+
+  def start(roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
+    let randomEdgesIndex = 0;
+    let randomWeightDeltasIndex = 0;
+    while(true) { --TODO how/when to end this loop, ended by exit in main now
+      sleep(50); -- TODO how much to sleep here
+      let vp = this.randomEdges[randomEdgesIndex];
+      let weight = get roadGraph.getWeight(vp);
+      if (weight != -1) then { --All edges should be valid, but ...
+        --TODO add paths to update queue
+        let delta = this.randomWeightDeltas[randomWeightDeltasIndex];
+        print("WeightHandler: Changing vertex {}-{} from weight {} with delta {}.\n", vp.a, vp.b, weight, delta);
+        roadGraph.updateWeight(vp, max(0, min(500, weight + delta)));
+        if (delta > 0) then {
+          this.recomputePathsIncreased(vp, shortestPaths, updateQueue);
+        } else if (delta < 0) then {
+          this.recomputePathsDecreased(vp, shortestPaths, updateQueue);
+        }
+      } else {
+        print("Non valid edge in start in WeightHandler");
+      };
+
+      randomEdgesIndex = randomEdgesIndex + 1;
+      if (randomEdgesIndex >= |this.randomEdges|) then {
+        randomEdgesIndex = 0;
+      };
+
+      randomWeightDeltasIndex = randomWeightDeltasIndex + 1;
+      if (randomWeightDeltasIndex >= |this.randomWeightDeltas|) then {
+        randomWeightDeltasIndex = 0;
+      };
+    }
+  }
+
+  def recomputePathsIncreased(vp : VertexPair, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
+    repeat i <- this.numVertex {
+      if (i != vp.a) then {
+        if ((get shortestPaths.getNextVertex(vp.a, i)) == vp.b) then {
+          -- The path from a to i goes through b
+          -- TODO this will NOT find all paths going through a to b
+          updateQueue.push(new FromTo(vp.a, i));
+          ()
+        }
+      };
+      if (i != vp.b) then {
+        if ((get shortestPaths.getNextVertex(vp.b, i)) == vp.a) then {
+          updateQueue.push(new FromTo(vp.b, i));
+          ()
+        }
+      }
+    }
+  }
+
+  def recomputePathsDecreased(vp : VertexPair, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
+    -- TODO this does only recompute going to a or b but not through the edge a-b ?
+    repeat i <- this.numVertex {
+      if (i != vp.a) then {
+        if ((get shortestPaths.getNextVertex(vp.a, i)) != vp.b) then {
+          updateQueue.push(new FromTo(vp.a, i));
+          ()
+        }
+      };
+      if (i != vp.b) then {
+        if ((get shortestPaths.getNextVertex(vp.b, i)) != vp.a) then {
+          updateQueue.push(new FromTo(vp.b, i));
+          ()
+        }
+      }
+    }
+  }
+
+class Car
+  goal : int
+  next : int
+  current : int
+
+  def init(start : int, next : int, goal : int) : void {
+    this.current = start;
+    this.next = next;
+    this.goal = goal;
+  }
+
+  def travel(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : bool {
+    let goalReached = false;
+    while (not goalReached) {
+      let time = get roadGraph.getWeight(new VertexPair(this.current, this.next));
+      if (time == -1) then {
+        print("Bad edge in travel in Car. Current: {}, next: {}", this.current, this.next);
+      } else {
+        print("Car: Sleeping {}\n", time);
+        sleep(time);
+      };
+      this.current = this.next;
+      if (this.current == this.goal) then {
+        goalReached = true;
+        print("Car: goal reached.");
+      } else {
+        this.next = get shortestPaths.getNextVertex(this.current, this.goal);
+        while (this.next == -1) {
+          sleep(10); -- TODO better way to do this
+          print("Car: next vertex == -1");
+          this.next = get shortestPaths.getNextVertex(this.current, this.goal);
+        }
+      }
+    };
+    true
+  }
+
+class Main {
+  def main() : void {
+    let numVertex = 10;
+    let roadGraph = new RoadGraph(numVertex);
+    print("Main: RoadGraph created.");
+    let sp = new ShortestPaths();
+    print("Main: ShortestPaths created.");
+    let uq = new UpdateQueue(numVertex);
+    print("Main: UpdateQueue created.");
+    let neighbourMap = get roadGraph.getNeighbourMap();
+    let wh = new WeightHandler(numVertex, neighbourMap);
+    print("Main: WeightHandler created.");
+    let pathWorkers = new [PathWorker](4);
+    repeat i <- |pathWorkers| {
+      pathWorkers[i] = new PathWorker(numVertex);
+    };
+    print("Main: PathWorkers created.");
+    let numCars = 10;
+    let carFuts = new [Fut bool](numCars);
+    let cars = new [Car](numCars);
+
+    let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, 4135);
+    repeat i <- numCars {
+      let start = carNodes[i * 2];
+      let next =  (get neighbourMap.getValue(carNodes[i * 2])).at(0); -- TODO get random neighbour
+      let goal = carNodes[i * 2 + 1];
+      if (start == goal) then {
+        goal = next; -- TODO this might not be the best thing to do here, but...
+      };
+      cars[i] = new Car(start, next, goal);
+    };
+    print("Main: Cars created.");
+    print("Main: Setup complete.");
+    tic();
+    wh.start(roadGraph, sp, uq);
+    print("Main: weight handler started.");
+    repeat i <- |pathWorkers| {
+      (pathWorkers[i]).start(uq, get sp.getNextVertexMap(), -- TODO next vertex map, pathworker should maybe access it through shortest paths instead
+          neighbourMap, get roadGraph.getEdges());
+    };
+    print("Main: path workers started.");
+    repeat i <- numCars {
+      carFuts[i] = (cars[i]).travel(roadGraph, sp);
+    };
+    print("Main: cars traveling.");
+    repeat i <- numCars {
+      get carFuts[i];
+    };
+    print("Main: cars finished.");
+    let time = toc();
+    print("Time: {} ms\n", time);
+    embed void exit(EXIT_SUCCESS); end;
+
+  }
+}
