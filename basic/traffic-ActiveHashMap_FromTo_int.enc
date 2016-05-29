@@ -87,10 +87,10 @@ class RoadGraph
 
 
 class ShortestPaths --TODO will this class be more than just an active hashmap?
-  map : __SP_SET__
+  map : ActiveHashMap_FromTo_int
   -- TODO this could be just a matrix (almost entierly filled)
   def init() : void {
-    this.map = new __SP_SET__();
+    this.map = new ActiveHashMap_FromTo_int();
   }
 
   def getNextVertex(current : int, goal : int) : int {
@@ -98,7 +98,7 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
     -- TODO how to handle if no path has been created yet
   }
 
-  def getNextVertexMap() : __SP_SET__ {
+  def getNextVertexMap() : ActiveHashMap_FromTo_int {
     this.map
   }
 
@@ -138,7 +138,7 @@ class PathWorker
     this.numVertex = numVertex
   }
 
-  def start(updateQueue : UpdateQueue, nextVertexMap : __SP_SET__,
+  def start(updateQueue : UpdateQueue, nextVertexMap : ActiveHashMap_FromTo_int,
       neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
     while (true) { -- how/when should this end?
       let ft = get updateQueue.pop();
@@ -153,7 +153,7 @@ class PathWorker
     }
   }
 
-  def calculatePath(ft : FromTo, nextVertexMap : __SP_SET__,
+  def calculatePath(ft : FromTo, nextVertexMap : ActiveHashMap_FromTo_int,
       neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
     let dist = new [int](this.numVertex);
     let prev = new [int](this.numVertex);

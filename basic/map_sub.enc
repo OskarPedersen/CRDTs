@@ -1,0 +1,26 @@
+bundle map_sub where
+
+--class PrivateSubMap
+
+passive class SubMap
+  subMaps : [ActiveHashMap_FromTo_int]
+
+  def init () : void {
+    let nc = numcores();
+    this.subMaps = new [ActiveHashMap_FromTo_int](nc);
+    repeat i <- nc {
+      this.subMaps[i] = new ActiveHashMap_FromTo_int()
+    }
+  }
+
+  def put(ft : FromTo, next : int) : void {
+    (this.subMaps[this.hash(ft)]).put(ft, next)
+  }
+
+  def getValue(ft : FromTo) : Fut int {
+    (this.subMaps[this.hash(ft)]).getValue(ft)
+  }
+
+  def hash(ft : FromTo) : int {
+    (ft.from + ft.to * 73) % |this.subMaps|
+  }

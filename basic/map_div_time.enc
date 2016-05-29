@@ -1,0 +1,71 @@
+bundle map_div_time where
+
+passive class TimeValue
+  time : int
+  value : int
+
+  def init(value : int) : void {
+    this.time = currentTime();
+    this.value = value;
+  }
+
+  def toInt() : int {
+    this.time + this.value * 73
+  }
+
+class DistMap
+  id : int
+  maps : [ActiveHashMap_FromTo_TimeValue]
+
+  def init(id : int, maps : [ActiveHashMap_FromTo_TimeValue]) : void {
+    this.id = id;
+    this.maps = maps;
+  }
+
+  def put(ft : FromTo, next : int) : void {
+    (this.maps[this.id]).put(ft, new TimeValue(next))
+  }
+
+  def getValue(ft : FromTo) : int {
+    let futs = new [Fut TimeValue](|this.maps|);
+    let latestTime = -1;
+    let latestValue = -1;
+    repeat i <- |this.maps| {
+      futs[i] = (this.maps[i]).getValue(ft)
+    };
+    repeat i <- |this.maps| {
+      let timeValue = get (futs[i]);
+      if (timeValue != null) then {
+        if (timeValue.time > latestTime) then {
+          latestTime = timeValue.time;
+          latestValue = timeValue.value;
+        }
+      }
+    };
+    latestValue;
+
+  }
+
+passive class DivTimeMap
+  distMaps : [DistMap]
+  maps : [ActiveHashMap_FromTo_TimeValue]
+
+  def init() : void {
+    let nc = numcores();
+    this.distMaps = new [DistMap](nc);
+    this.maps = new [ActiveHashMap_FromTo_TimeValue](nc);
+    repeat i <- nc {
+      this.maps[i] = new ActiveHashMap_FromTo_TimeValue();
+    };
+    repeat i <- nc {
+      this.distMaps[i] = new DistMap(i, this.maps);
+    }
+  }
+
+  def put(ft : FromTo, next : int) : void {
+    (this.distMaps[core()]).put(ft, next)
+  }
+
+  def getValue(ft : FromTo) : Fut int {
+    (this.distMaps[core()]).getValue(ft)
+  }

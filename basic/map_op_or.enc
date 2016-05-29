@@ -1,0 +1,12 @@
+bundle map_op_or where
+
+
+passive class OpOrMap
+
+  def put() : void {
+    TODO
+  }
+
+  def getValue() : Fut int {
+    TODO
+  }
