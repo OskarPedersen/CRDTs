@@ -9,6 +9,14 @@ passive class IDNext
     this.next = next;
   }
 
+  def equals(n : IDNext) : bool {
+    (this.id == n.id) and (this.next == n.next);
+  }
+
+  def toInt() : int {
+    this.id + this.next * 73
+  }
+
 class LocalMap
   localMaps : [LocalMap]
   idCounter : int
@@ -20,7 +28,7 @@ class LocalMap
 
   def init(setID : int) : void {
     this.idCounter = -1;
-    this.hashMap = HashMap_FromTo_HashSet_IDNext();
+    this.hashMap = new HashMap_FromTo_HashSet_IDNext();
     this.setID = setID;
   }
 
@@ -57,7 +65,7 @@ class LocalMap
     }
   }
 
-  def getValue(ft : FromTo) : void {
+  def getValue(ft : FromTo) : int {
     let set = this.hashMap.getValue(ft);
     if (set != null) then {
       let maxID = -1;
@@ -85,7 +93,7 @@ passive class OpOrMap
   localMaps : [LocalMap]
 
   def init() : void {
-    this.localMaps = new [LocalMap](numcore());
+    this.localMaps = new [LocalMap](numcores());
     repeat i <- |this.localMaps| {
       this.localMaps[i] = new LocalMap(i)
     };
