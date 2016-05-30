@@ -2,7 +2,8 @@ list_t = ['int', 'HashMapEntry_int_int', 'HashMapEntry_int_TimeOp',
     'HashMapEntry_int_HashSet_int', 'HashMapEntry_NodeID_RGANode',
     'HashMapEntry_NodeID_int', 'HashMapEntry_VertexPair_int', 'FromTo',
     'HashMapEntry_int_List_int', 'HashMapEntry_FromTo_int',
-    'HashMapEntry_FromTo_TimeValue']
+    'HashMapEntry_FromTo_TimeValue', 'HashMapEntry_FromTo_HashSet_int',
+    'HashMapEntry_FromTo_HashSet_IDNext']
 list_inf = open('gen_list.enc', 'r')
 list_gen = list_inf.read()
 list_inf.close()
@@ -13,12 +14,12 @@ for l in list_t:
 list_outf.close()
 
 
-hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int',              'FromTo',       'FromTo']
-hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int',         'int',          'TimeValue']
-hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b',           'a.equals(b)',  'a.equals(b)']
-hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a',                'a.toInt()',    'a.toInt()']
-hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1',              'null',         'null']
-hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int', '-1',           'null : TimeValue']
+hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int',              'FromTo',       'FromTo',           'FromTo',               'FromTo']
+hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int',         'int',          'TimeValue',        'HashSet_int',          'HashSet_IDNext']
+hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b',           'a.equals(b)',  'a.equals(b)',      'a.equals(b)',          'a.equals(b)']
+hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a',                'a.toInt()',    'a.toInt()',        'a.toInt()',            'a.toInt()']
+hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1',              'null',         'null',             'null',                 'null']
+hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int', '-1',           'null : TimeValue', 'null : HashSet_int',   'null : HashSet_IDNext']
 hm_inf = open('gen_hashmap.enc', 'r')
 hm_gen = hm_inf.read()
 hm_inf.close()

@@ -1,12 +1,104 @@
 bundle map_op_or where
 
+passive class IDNext
+  id : int
+  next : int
 
-passive class OpOrMap
-
-  def put() : void {
-    TODO
+  def init(id : int, next : int) : void {
+    this.id = id;
+    this.next = next;
   }
 
-  def getValue() : Fut int {
-    TODO
+class LocalMap
+  localMaps : [LocalMap]
+  idCounter : int
+  idUpper : int
+
+  hashMap : HashMap_FromTo_HashSet_IDNext
+
+  setID : int
+
+  def init(setID : int) : void {
+    this.idCounter = -1;
+    this.hashMap = HashMap_FromTo_HashSet_IDNext();
+    this.setID = setID;
+  }
+
+  def setup(localMaps : [LocalMap], idUpper : int) : void {
+    this.localMaps = localMaps;
+    this.idUpper = idUpper;
+  }
+
+  def nextID() : int {
+    -- IDs ordered by nodes
+    this.idCounter = this.idCounter + 1;
+    this.idUpper + this.idCounter;
+  }
+
+  def put(ft : FromTo, next : int) : void {
+    let id = this.nextID();
+    repeat i <- |this.localMaps| {
+      if (i == this.setID) then {
+        this.putDownstream(ft, next, id)
+      } else {
+        this.localMaps[i]!putDownstream(ft, next, id)
+      }
+    }
+  }
+
+  def putDownstream(ft : FromTo, next : int, id : int) : void {
+    let set = this.hashMap.getValue(ft);
+    if (set == null) then {
+      let newset = new HashSet_IDNext();
+      newset.add(new IDNext(id, next));
+      this.hashMap.put(ft, newset);
+    } else {
+      set.add(new IDNext(id, next));
+    }
+  }
+
+  def getValue(ft : FromTo) : void {
+    let set = this.hashMap.getValue(ft);
+    if (set != null) then {
+      let maxID = -1;
+      let maxNext = -1;
+      let iter = set.iterator();
+      let break = false;
+      while (not break) {
+        let idNext = iter.next();
+        if (idNext == null) then {
+          break = true;
+        } else {
+          if (idNext.id > maxID) then {
+            maxID = idNext.id;
+            maxNext = idNext.next;
+          }
+        }
+      };
+      maxNext;
+    } else {
+      -1
+    }
+  }
+
+passive class OpOrMap
+  localMaps : [LocalMap]
+
+  def init() : void {
+    this.localMaps = new [LocalMap](numcore());
+    repeat i <- |this.localMaps| {
+      this.localMaps[i] = new LocalMap(i)
+    };
+    repeat i <- |this.localMaps| {
+      (this.localMaps[i]).setup(this.localMaps, (intMax() / |this.localMaps|) * i)
+    }
+  }
+
+
+  def put(ft : FromTo, next : int) : void {
+    (this.localMaps[core()]).put(ft, next)
+  }
+
+  def getValue(ft : FromTo) : Fut int {
+    (this.localMaps[core()]).getValue(ft)
   }
