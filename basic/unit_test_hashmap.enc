@@ -9,27 +9,27 @@ def test_basics(test : Test) : void {
   hashMap.put(2, 4);
 
   test.assert(hashMap.size() == 1, "size 1");
-  test.assert(match hashMap.getValue(2) with Nothing => false Just a => a == 4,
+  test.assert(hashMap.getValue(2)  == 4,
     "get 2 = 4");
 
   hashMap.put(3, 9);
 
   test.assert(hashMap.size() == 2, "size 2");
-  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 9,
+  test.assert(hashMap.getValue(3)  == 9,
    "get 3 = 9");
 
   hashMap.remove(2);
 
   test.assert(hashMap.size() == 1, "size decreased to 1");
-  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 9,
+  test.assert(hashMap.getValue(3) == 9,
    "get 2 unchanged");
 
   hashMap.put(3, 10);
 
   test.assert(hashMap.size() == 1, "size unchanged");
-  test.assert(match hashMap.getValue(3) with Nothing => false Just a => a == 10,
+  test.assert(hashMap.getValue(3) == 10,
    "value updated");
-  test.assert(match hashMap.getValue(123) with Nothing => true Just a => false,
+  test.assert(hashMap.getValue(123) == -1,
    "Non added value");
 }
 
@@ -38,7 +38,7 @@ def test_iterator(test : Test) : void {
   let hashMap = new HashMap_int_int();
   let emptyIter = hashMap.iterator();
 
-  test.assert(match emptyIter.next() with Noting => true Just a => false,
+  test.assert(emptyIter.next() == null,
    "empty iterator");
 
   hashMap.put(1, 1);
@@ -53,9 +53,12 @@ def test_iterator(test : Test) : void {
   };
   let break = false;
   while (not break) {
-    match iter.next() with
-    Nothing => break = true
-    Just entry => tmpres[entry.key] = entry.value;
+    let entry = iter.next();
+    if (entry == null) then {
+      break = true;
+    } else {
+      tmpres[entry.key] = entry.value;
+    }
   };
   repeat i <- |tmpres| {
     if (tmpres[i] != unitialized) then {
