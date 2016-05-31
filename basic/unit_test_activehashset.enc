@@ -1,0 +1,49 @@
+import all
+import test_utils
+
+def test_seq(test : Test) : void {
+  let hs = new ActiveHashSet_int();
+
+  test.assert((get hs.size()) == 0, "Initially empty");
+
+  repeat i <- 20 {
+    hs.add(i);
+  };
+  repeat i <- 20 {
+    test.assert((get hs.contains(i)) == true, "Contains added elem");
+  };
+  repeat i <- 20 {
+    hs.remove(i);
+  };
+  test.assert((get hs.size()) == 0, "All elements removed");
+}
+
+def test_conc(test : Test) : void {
+  let hs = new ActiveHashSet_int();
+  let adders = new [Adder](10);
+  repeat i <- |adders| {
+    adders[i] = new Adder(hs, i)
+  };
+  repeat i <- |adders| {
+    get ((adders[i]).wait());
+  };
+  get hs.wait();
+
+  test.assert((get hs.size()) == 1010, "No duplcates in size");
+}
+
+class Adder
+  def init(hs : ActiveHashSet_int, start : int) : void {
+    repeat i <- 1000 {
+      hs.add(start + i);
+    }
+  }
+
+  def wait() : void ()
+
+class Main {
+  def main() : void {
+    let module = "ActiveHashSet";
+    test_seq(new Test(module, "Sequential"));
+  }
+}

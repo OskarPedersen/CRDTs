@@ -1,0 +1,67 @@
+import all
+import test_utils
+
+def test_seq(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let set = new DivTimeSet<int>(eq, toInt);
+
+  test.assert(not get set.contains(1), "Not containing initially");
+
+  set.add(1);
+
+  test.assert(get set.contains(1), "contains added");
+
+  set.remove(1);
+
+  test.assert(not get set.contains(1), "Not containing removed element");
+
+  set.add(1);
+  set.add(2);
+
+  test.assert(get set.contains(1), "Contains readded element");
+  test.assert(get set.contains(2), "Contains newly added element");
+}
+
+def test_paradd(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let set = new DivTimeSet<int>(eq, toInt);
+  let adders = new [Adder](10);
+  repeat i <- |adders| {
+    adders[i] = new Adder(set, i * 100);
+  };
+  repeat i <- |adders| {
+    get (adders[i]).wait()
+  };
+  set.wait();
+
+  test.assert(get set.contains(0), "Contains element added by one");
+  test.assert(get set.contains(950), "Contains element added by several");
+}
+
+def test_paraddcontains(test : Test) : void {
+  let eq = \(a : int, b : int) -> a == b;
+  let toInt = \(a : int) -> a;
+  let set = new DivTimeSet<int>(eq, toInt);
+}
+
+class Adder
+  def init(set : DivTimeSet<int>, start : int) : void {
+    repeat i <- 1000 {
+      set.add(start + i);
+    }
+  }
+
+  def wait() : void ()
+
+class AddContains
+
+class Main {
+  def main() : void {
+    let module = "Set Div Time";
+    test_seq(new Test(module, "Sequential"));
+    test_paradd(new Test(module, "Concurrent Add"));
+    test_paraddcontains(new Test(module, "Concurrent Add Contains"));
+  }
+}
