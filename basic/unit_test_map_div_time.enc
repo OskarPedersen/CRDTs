@@ -1,0 +1,62 @@
+import all
+import test_utils
+
+
+def test_singleuse(test : Test) : void {
+  let ahm = new DivTimeMap();
+
+  --test.assert((get ahm.size()) == 0, "Initially empty");
+
+  ahm.put(new FromTo(1,2), 3);
+
+  --test.assert((get ahm.size()) == 1, "Size increased by 1");
+  test.assert((get ahm.getValue(new FromTo(1,2))) == 3,
+   "put get");
+
+   repeat i <- 99 {
+      ahm.put(new FromTo(i, i + 1), i + 2)
+   };
+   ahm.wait();
+
+   test.assert((get ahm.getValue(new FromTo(87, 88))) == 89,
+    "get 87");
+   --test.assert((get ahm.size()) == 100, "Size increased by 99");
+}
+
+
+def test_manyadders(test : Test) : void {
+  let ahm = new DivTimeMap();
+  --test.assert((get ahm.size()) == 0, "Initially empty");
+  let workers = 10;
+  let w = new [Adder](workers);
+  repeat i <- workers {
+    w[i] = new Adder(ahm, i * 100)
+  };
+  repeat i <- workers {
+    get (w[i]).wait()
+  };
+  ahm.wait();
+  --test.assert((get ahm.size()) ==  1900, "Correct size");
+  test.assert((get ahm.getValue(new FromTo(5, 5 * 2))) == 5 + 1 , "Value put by one adder");
+  test.assert((get ahm.getValue(new FromTo(112, 112 * 2))) == 112 + 1 , "Value put by two adders");
+  test.assert((get ahm.getValue(new FromTo(1500, 1500 * 2))) == -1 , "Value put by no adders");
+}
+
+class Adder
+  def init(ahm : DivTimeMap, start : int) : void {
+      repeat i <- 200 {
+        let v = start + i;
+        ahm.put(new FromTo(i, i * 2), i + 1)
+      }
+  }
+
+  def wait() : void ()
+
+
+class Main {
+  def main() : void {
+    let module = "Map Div Time";
+    test_singleuse(new Test(module, "Sequential use"));
+    test_manyadders(new Test(module, "Many Adders"));
+  }
+}

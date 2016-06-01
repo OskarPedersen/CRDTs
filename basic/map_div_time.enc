@@ -43,8 +43,10 @@ class DistMap
       }
     };
     latestValue;
-
   }
+
+  def wait() : void
+    ()
 
 passive class DivTimeMap
   distMaps : [DistMap]
@@ -68,4 +70,11 @@ passive class DivTimeMap
 
   def getValue(ft : FromTo) : Fut int {
     (this.distMaps[core()]).getValue(ft)
+  }
+
+  def wait() : void {
+    repeat i <- |this.distMaps| {
+      get (this.distMaps[i]).wait();
+      get (this.maps[i]).wait();
+    }
   }

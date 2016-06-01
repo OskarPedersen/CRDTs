@@ -89,6 +89,10 @@ class LocalMap
     }
   }
 
+  def wait() : void {
+    ()
+  }
+
 passive class OpOrMap
   localMaps : [LocalMap]
 
@@ -109,4 +113,10 @@ passive class OpOrMap
 
   def getValue(ft : FromTo) : Fut int {
     (this.localMaps[core()]).getValue(ft)
+  }
+
+  def wait() : void {
+    repeat i <- |this.localMaps| {
+      get (this.localMaps[i]).wait()
+    }
   }

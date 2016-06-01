@@ -2,7 +2,7 @@ import all
 import test_utils
 
 def test_seq(test : Test) : void {
-  let set = new DivTimeSet();
+  let set = new SubSet();
 
   test.assert(not get set.contains(1), "Not containing initially");
 
@@ -22,7 +22,7 @@ def test_seq(test : Test) : void {
 }
 
 def test_paradd(test : Test) : void {
-  let set = new DivTimeSet();
+  let set = new SubSet();
   let adders = new [Adder](10);
   repeat i <- |adders| {
     adders[i] = new Adder(set, i * 100);
@@ -37,7 +37,7 @@ def test_paradd(test : Test) : void {
 }
 
 def test_paraddcontains(test : Test) : void {
-  let set = new DivTimeSet();
+  let set = new SubSet();
   let acs = new [AddContains](10);
   let num = 100;
   repeat i <- |acs| {
@@ -51,7 +51,7 @@ def test_paraddcontains(test : Test) : void {
 }
 
 class Adder
-  def init(set : DivTimeSet, start : int) : void {
+  def init(set : SubSet, start : int) : void {
     repeat i <- 1000 {
       set.add(start + i);
     }
@@ -60,7 +60,7 @@ class Adder
   def wait() : void ()
 
 class AddContains
-  def init(set : DivTimeSet, test : Test, start : int, endd : int) : void {
+  def init(set : SubSet, test : Test, start : int, endd : int) : void {
     repeat i <- endd - start {
       set.add(i + start);
     };
@@ -72,7 +72,7 @@ class AddContains
 
 class Main {
   def main() : void {
-    let module = "Set Div Time";
+    let module = "Set Sub";
     test_seq(new Test(module, "Sequential"));
     test_paradd(new Test(module, "Concurrent Add"));
     test_paraddcontains(new Test(module, "Concurrent Add Contains"));

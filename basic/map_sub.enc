@@ -24,3 +24,9 @@ passive class SubMap
   def hash(ft : FromTo) : int {
     (ft.from + ft.to * 73) % |this.subMaps|
   }
+
+  def wait() : void {
+    repeat i <- |this.subMaps| {
+      get (this.subMaps[i]).wait();
+    }
+  }
