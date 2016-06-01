@@ -1,0 +1,18 @@
+import all
+
+class Main {
+  def main() : void {
+    let set = new SubSet();
+    repeat i <- 100000 {
+      set.add(i);
+    };
+    set.wait();
+    repeat i <- 10000 {
+      tic();
+      get set.contains(i);
+      let t = toc();
+      if (t != 0) then
+        print(t);
+    }
+  }
+}
