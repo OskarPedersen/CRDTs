@@ -3,8 +3,8 @@ import all
 
 class RoadGraph
   --vertices : HashSet_int
-  edges : ActiveHashMap_VertexPair_int
-  neighbourMap : ActiveHashMap_int_List_int
+  edges : ActiveHashMap_VertexPair_int -- TODO do these two need to be active?
+  neighbourMap : ActiveHashMap_int_List_int -- TODO ^ They should be read only except for initialization
 
   def init(numVertex : int) : void {
     --this.vertices = new HashSet_int();
@@ -64,7 +64,6 @@ class RoadGraph
       neighbourList.add(neighbour);
       this.neighbourMap.put(vertex, neighbourList);
     } else {
-      --neighbourList.add(neighbour); -- TODO will this work, or do we need to create a new copy of the list, seams like it dont
       let newList = new List_int();
       repeat i <- neighbourList.size() {
         newList.add(neighbourList.at(i));
@@ -109,10 +108,9 @@ class UpdateQueue
     this.list = new List_FromTo();
     repeat i <- numVertex {
       repeat j <- numVertex {
-        if (i != j) then {
-          this.push(new FromTo(i, j))
-          -- TODO i j == j i,
-          -- should we then only push one of them?
+        if (i < j) then {
+          this.push(new FromTo(i, j));
+          -- We only push one of each path since i j == j i and both will be calculated at the same time
         }
       }
     }
@@ -145,7 +143,7 @@ class PathWorker
       let ft = get updateQueue.pop();
       if (ft == null) then {
         ----print("PathWorker: Sleeping");
-        sleep(10); -- TODO what is best to do here?
+        sleep(1); -- TODO what is best to do here?
       } else {
           --print("PathWorker: Calculate path");
           this.calculatePath(ft, nextVertexMap, neighbourMap, edges);
@@ -245,7 +243,6 @@ class WeightHandler
       let vp = this.randomEdges[randomEdgesIndex];
       let weight = get roadGraph.getWeight(vp);
       if (weight != -1) then { --All edges should be valid, but ...
-        --TODO add paths to update queue
         let delta = this.randomWeightDeltas[randomWeightDeltasIndex];
         --print("WeightHandler: Changing vertex {}-{} from weight {} with delta {}.\n", vp.a, vp.b, weight, delta);
         roadGraph.updateWeight(vp, max(0, min(500, weight + delta)));
@@ -337,7 +334,7 @@ class Car
       } else {
         this.next = get shortestPaths.getNextVertex(this.current, this.goal);
         while (this.next == -1) {
-          sleep(10); -- TODO better way to do this
+          sleep(1); -- TODO better way to do this
           --print("Car: next vertex == -1");
           this.next = get shortestPaths.getNextVertex(this.current, this.goal);
         }

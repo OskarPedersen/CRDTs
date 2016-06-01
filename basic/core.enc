@@ -1,0 +1,106 @@
+import all
+-- Based on the set in "An efficient parallel set container for multicore architectures"
+
+class PrivateSubSet_core -- TODO this is currently exactly like an active hash set
+                    -- Switch to that if no extra needs to be added
+  hashSet : HashSet_int
+  cores : [int]
+  def init() : void {
+    this.hashSet = new HashSet_int();
+    this.cores = new [int](numcores())
+  }
+
+  def add(elem : int) : void {
+    this.noteCore();
+    this.hashSet.add(elem);
+  }
+
+  def remove(elem : int) : void {
+    this.noteCore();
+    this.hashSet.remove(elem)
+  }
+
+  def removeAll(elems : HashSet_int) : void {
+    this.noteCore();
+    this.hashSet.removeAll(elems)
+  }
+
+  def contains(elem : int) : bool {
+    this.noteCore();
+    this.hashSet.contains(elem)
+  }
+
+  def size() : int {
+    this.noteCore();
+    this.hashSet.size()
+  }
+
+  def wait() : bool {
+    --this.noteCore();
+    true
+  }
+
+  def noteCore() : void {
+    let c = core();
+    this.cores[c] = this.cores[c] + 1;
+  }
+
+  def printCores() : void {
+    print("{}","Cores: ");
+    repeat i <- |this.cores| {
+      print("{} ", this.cores[i])
+    };
+    print("");
+  }
+
+
+passive class SubSet_core
+  subSets : [PrivateSubSet_core]
+
+  def init() : void {
+    let nc = numcores();
+    this.subSets = new [PrivateSubSet_core](nc);
+    repeat i <- nc {
+      this.subSets[i] = new PrivateSubSet_core()
+    }
+  }
+
+  def add(elem : int) : void {
+    (this.subSets[this.hash(elem)]).add(elem)
+  }
+
+  def remove(elem : int) : void {
+    (this.subSets[this.hash(elem)]).remove(elem)
+  }
+
+  def contains(elem : int) : Fut bool {
+    (this.subSets[this.hash(elem)]).contains(elem)
+  }
+
+  def wait() : void {
+    repeat i <- |this.subSets| {
+      get (this.subSets[i]).wait();
+    }
+  }
+
+  def hash(elem : int) : int {
+    elem % |this.subSets| --TODO better hash function
+  }
+
+  def printCores() : void {
+    repeat i <- |this.subSets| {
+      (this.subSets[i]).printCores();
+      (this.subSets[i]).wait();
+      sleep(100);
+    }
+  }
+
+class Main {
+  def main() : void {
+    let set = new SubSet_core();
+    repeat i <- 80000 {
+      set.add(i);
+    };
+    set.printCores();
+  }
+}
