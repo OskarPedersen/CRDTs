@@ -16,7 +16,7 @@ class Main
     let runs = __RUNS__;
     let operations = __OPERATIONS__;
     let workers = __WORKERS__;
-
+    let time = 0;
     repeat i <- runs {
       let set = new __SET__();
       let setWorkers = new [__SET__Worker](workers);
@@ -32,6 +32,7 @@ class Main
       };
       __WAIT_GET__ set.wait();
       --print("__SET__: {} ms\n", toc());
-      print(toc());
-    }
+      time = time + toc();
+    };
+    print("{}", time / runs)
   }

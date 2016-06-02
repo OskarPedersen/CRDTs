@@ -14,7 +14,7 @@ class RoadGraph
     this.edges = new ActiveHashMap_VertexPair_int();
     this.neighbourMap = new ActiveHashMap_int_List_int();
     let min = 0;
-    let max = 3;
+    let max = 5;
     let seed = 7894;
     let randomValues = randomSeq(numVertex * numVertex, min, max, seed);
     let randomInitial = randomSeq(numVertex, 0, numVertex - 1, 12845);
@@ -89,11 +89,19 @@ class RoadGraph
 class ShortestPaths --TODO will this class be more than just an active hashmap?
   map : __SP_SET__
   -- TODO this could be just a matrix (almost entierly filled)
+  gets : int
+
   def init() : void {
     this.map = new __SP_SET__();
+    this.gets = 0;
+  }
+
+  def getGets() : int {
+    this.gets
   }
 
   def getNextVertex(current : int, goal : int) : int {
+    this.gets = this.gets + 1;
     get this.map.getValue(new FromTo(current, goal));
     -- TODO how to handle if no path has been created yet
   }
@@ -133,13 +141,21 @@ class UpdateQueue
 
 class PathWorker
   numVertex : int
+  puts : int
+
   def init(numVertex : int) : void {
-    this.numVertex = numVertex
+    this.numVertex = numVertex;
+    this.puts = 0;
+  }
+
+  def getPuts() : int {
+    this.puts;
   }
 
   def start(updateQueue : UpdateQueue, nextVertexMap : __SP_SET__,
       neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
     while (true) { -- how/when should this end?
+      suspend;
       let ft = get updateQueue.pop();
       if (ft == null) then {
         ----print("PathWorker: Sleeping");
@@ -205,6 +221,7 @@ class PathWorker
       nextVertexMap.put(new FromTo(p, ft.to), c);
       --print("PathWorker: {} -> {} = {}\n", p, ft.to, c);
       nextVertexMap.put(new FromTo(c, ft.from), p); -- The reverse path
+      this.puts = this.puts + 2;
       --print("PathWorker: {} -> {} = {} (reverse)\n", c, ft.from, p);
       c = p;
       p = prev[p];
@@ -325,7 +342,8 @@ class Car
         ()
       } else {
         --print("Car: Sleeping {}\n", time);
-        sleep(time);
+        --sleep(time / 10);
+        ()
       };
       this.current = this.next;
       if (this.current == this.goal) then {
@@ -334,7 +352,7 @@ class Car
       } else {
         this.next = get shortestPaths.getNextVertex(this.current, this.goal);
         while (this.next == -1) {
-          sleep(1); -- TODO better way to do this
+          --sleep(1); -- TODO better way to do this, if present this sleep seams to have quite large impact on run time
           --print("Car: next vertex == -1");
           this.next = get shortestPaths.getNextVertex(this.current, this.goal);
         }
@@ -345,7 +363,7 @@ class Car
 
 class Main {
   def main() : void {
-    let numVertex = 60;
+    let numVertex = 80;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
     let sp = new ShortestPaths();
@@ -394,6 +412,12 @@ class Main {
     --print("Main: cars finished.");
     let time = toc();
     print("Time: {} ms\n", time);
+    print("Number of gets: {}\n", get sp.getGets());
+    let puts = 0;
+    repeat i <- |pathWorkers| {
+      puts = puts + (get (pathWorkers[i]).getPuts());
+    };
+    print("Number of puts: {}\n", puts);
     embed void exit(EXIT_SUCCESS); end;
 
   }
