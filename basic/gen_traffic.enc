@@ -5,6 +5,7 @@ class RoadGraph
   --vertices : HashSet_int
   edges : ActiveHashMap_VertexPair_int -- TODO do these two need to be active?
   neighbourMap : ActiveHashMap_int_List_int -- TODO ^ They should be read only except for initialization
+  -- TODO ^ these two should also be of parallel maps!
 
   def init(numVertex : int) : void {
     --this.vertices = new HashSet_int();
@@ -322,9 +323,9 @@ class WeightHandler
     }
   }
 
-class Car
+passive class Car
   goal : int
-  next : int
+  --next : int
   current : int
 
   def init(start : int, next : int, goal : int) : void {
@@ -334,6 +335,13 @@ class Car
   }
 
   def travel(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : bool {
+    if (current == goal) then {
+      true
+    } else {
+      false
+    }
+
+    ---------------
     let goalReached = false;
     while (not goalReached) {
       let time = get roadGraph.getWeight(new VertexPair(this.current, this.next));
@@ -359,6 +367,27 @@ class Car
       }
     };
     true
+  }
+
+class CarGroup
+  cars : [Car]
+
+  def init() : void {
+
+  }
+
+  def start() : void {
+    let finished = false;
+    while (not finished) {
+      finished = true;
+      repeat i <- |this.cars| {
+        if (not (this.cars[i]).travel()) then {
+          finished = false;
+        }
+      };
+
+      weightHandler.changeWeight();
+    }
   }
 
 class Main {
@@ -419,6 +448,5 @@ class Main {
     };
     print("Number of puts: {}\n", puts);
     embed void exit(EXIT_SUCCESS); end;
-
   }
 }
