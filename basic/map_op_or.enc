@@ -1,21 +1,6 @@
 bundle map_op_or where
 
-passive class IDNext
-  id : int
-  next : int
 
-  def init(id : int, next : int) : void {
-    this.id = id;
-    this.next = next;
-  }
-
-  def equals(n : IDNext) : bool {
-    (this.id == n.id) and (this.next == n.next);
-  }
-
-  def toInt() : int {
-    this.id + this.next * 73
-  }
 
 class LocalMap
   localMaps : [LocalMap]

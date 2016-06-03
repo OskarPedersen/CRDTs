@@ -1,0 +1,137 @@
+bundle collections_data where
+
+-- These belong to something else, but are here since they are used in collections
+passive class FromTo
+  from : int
+  to : int
+
+  def init(from : int, to : int) : void {
+    this.from = from;
+    this.to = to;
+  }
+
+  def equals(ft : FromTo) : bool {
+    (this.from == ft.from) and (this.to == ft.to)
+  }
+
+  def toInt() : int {
+    this.from + this.to -- TODO better hash? function ex a +  b * 73
+  }
+
+passive class VertexPair
+  a : int
+  b : int
+
+  def init(a : int, b : int) : void {
+    this.a = min(a, b);
+    this.b = max(a, b);
+  }
+
+  def equals(vp : VertexPair) : bool {
+    (this.a == vp.a) and (this.b == vp.b)
+  }
+
+  def toInt() : int {
+    this.a + this.b -- TODO better hash? function ex a +  b * 73
+  }
+
+passive class TimeOp
+  time : int
+  op : bool
+
+  def init(op : bool) : void {
+    this.time = currentTime();
+    this.op = op;
+  }
+
+passive class TimeValue
+  time : int
+  value : int
+
+  def init(value : int) : void {
+    this.time = currentTime();
+    this.value = value;
+  }
+
+  def toInt() : int {
+    this.time + this.value * 73
+  }
+
+passive class IDNext
+  id : int
+  next : int
+
+  def init(id : int, next : int) : void {
+    this.id = id;
+    this.next = next;
+  }
+
+  def equals(n : IDNext) : bool {
+    (this.id == n.id) and (this.next == n.next);
+  }
+
+  def toInt() : int {
+    this.id + this.next * 73
+  }
+
+
+passive class NodeID
+  time : int
+  localRGAid : int
+  uid : int --locally unique if two local nodes has same time
+
+  def init(id : int, uid : int, special : bool) : void {
+    if (special) then {
+      this.time = 0;
+      this.localRGAid = 0;
+    } else {
+      this.time = currentTime();
+      this.localRGAid = id;
+    };
+    this.uid = uid;
+  }
+
+  def lessThan(other : NodeID) : bool {
+    if (this.time >= other.time) then {
+      false
+    } else if (this.localRGAid >= other.localRGAid) then {
+      false
+    } else if (this.uid >= other.uid) then {
+      false
+    } else {
+      true
+    }
+  }
+
+  def equals(other : NodeID) : bool {
+    (this.time == other.time) and (this.localRGAid == other.localRGAid) and (this.uid == other.uid)
+  }
+
+  def toInt() : int {
+    ((31 * this.time) * 31 + this.localRGAid) * 31 + this.uid
+  }
+
+passive class RGANode
+  next : RGANode
+  prev : RGANode
+  removed : bool
+  elem : int
+  nodeID : NodeID
+
+  def init(nodeID : NodeID) : void {
+    this.nodeID = nodeID;
+    this.removed = false;
+    this.next = null;
+    this.prev = null;
+  }
+
+  def setup(elem : int) : void {
+    this.elem = elem;
+  }
+
+  def update(elem : int, time : NodeID) : void {
+    if ((not this.removed) and (this.nodeID.lessThan(time))) then {
+      this.nodeID = time;
+      this.elem = elem
+    }
+  }

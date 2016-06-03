@@ -1,13 +1,6 @@
 bundle set_div_time where
 
-passive class TimeOp
-  time : int
-  op : bool
 
-  def init(op : bool) : void {
-    this.time = currentTime();
-    this.op = op;
-  }
 
 class DistSet
   id : int

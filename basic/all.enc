@@ -1,9 +1,7 @@
 bundle all where
 
 import utils
-import list
-import hashmap
-import hashset
+import collections
 import set_div_time
 import set_op_or
 import set_sub
@@ -12,39 +10,3 @@ import rga_op_time
 import map_sub
 import map_op_or
 import map_div_time
-
-
--- These belong to traffic, but are here since they are used in list
-passive class FromTo
-  from : int
-  to : int
-
-  def init(from : int, to : int) : void {
-    this.from = from;
-    this.to = to;
-  }
-
-  def equals(ft : FromTo) : bool {
-    (this.from == ft.from) and (this.to == ft.to)
-  }
-
-  def toInt() : int {
-    this.from + this.to -- TODO better hash? function ex a +  b * 73
-  }
-
-passive class VertexPair
-  a : int
-  b : int
-
-  def init(a : int, b : int) : void {
-    this.a = min(a, b);
-    this.b = max(a, b);
-  }
-
-  def equals(vp : VertexPair) : bool {
-    (this.a == vp.a) and (this.b == vp.b)
-  }
-
-  def toInt() : int {
-    this.a + this.b -- TODO better hash? function ex a +  b * 73
-  }
