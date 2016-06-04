@@ -105,9 +105,11 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
 
   def getNextVertex(current : int, goal : int) : int {
     this.gets = this.gets + 1;
-    while (not this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
+    while (not get this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
+      --print("ShortestPaths: queue not empty");
       ()
     };
+    --print("ShortestPaths: queue empty");
     get this.map.getValue(new FromTo(current, goal));
   }
 
@@ -126,7 +128,8 @@ class UpdateQueue
           -- We only push one of each path since i j == j i and both will be calculated at the same time
         }
       }
-    }
+    };
+    --print("UpdateQueue: init done");
   }
 
   def push(ft : FromTo) : void {
@@ -334,20 +337,23 @@ class WeightHandler
 
 passive class Car
   goal : int
-  --next : int
   current : int
 
-  def init(start : int, next : int, goal : int) : void {
+  def init(start : int, goal : int) : void {
     this.current = start;
-    this.next = next;
     this.goal = goal;
   }
 
   def travel(roadGraph : RoadGraph, shortestPaths : ShortestPaths) : bool {
-    if (current == goal) then {
+    if (this.current == this.goal) then {
       true
     } else {
-      this.next = get shortestPaths.getNextVertex(this.current, this.goal);
+      let next = get shortestPaths.getNextVertex(this.current, this.goal);
+      while (next == -1) { -- TODO why is this spin needed?
+        next = get shortestPaths.getNextVertex(this.current, this.goal);
+      };
+      this.current = next;
+      --print("Car: current {}\n", this.current);
       false
     }
   }
@@ -355,45 +361,45 @@ passive class Car
 class CarGroup
   cars : [Car]
 
-  def init(seed : int, neighbourMap : ActiveHashMap_int_List_int) : void {
+  def init(seed : int, neighbourMap : ActiveHashMap_int_List_int, numVertex : int) : void {
     let numCars = 10;
     this.cars = new [Car](numCars);
     let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, seed);
 
     repeat i <- numCars {
       let start = carNodes[i * 2];
-      let next =  (get neighbourMap.getValue(carNodes[i * 2])).at(0); -- TODO get random neighbour
+      --let next =  (get neighbourMap.getValue(carNodes[i * 2])).at(0); -- TODO get random neighbour
       let goal = carNodes[i * 2 + 1];
-      if (start == goal) then {
-        goal = next; -- TODO this might not be the best thing to do here, but...
-      };
-      this.cars[i] = new Car(start, next, goal);
+      -- TODO does not handle if start == goal, but that should not happen very often
+      this.cars[i] = new Car(start, goal);
     };
   }
 
-  def start(weightHandler : WeightHandler) : void {
+  def start(weightHandler : WeightHandler, roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
     let finished = false;
     while (not finished) {
       finished = true;
       repeat i <- |this.cars| {
-        if (not (this.cars[i]).travel()) then {
+        if (not (this.cars[i]).travel(roadGraph, shortestPaths)) then {
           finished = false;
         }
       };
+      --print("CarGroup: Cars has traveled");
 
-      get? weightHandler.changeWeight();
+      get weightHandler.changeWeight(roadGraph, shortestPaths, updateQueue); -- TODO now the same weightHandler is used, should there be one per car group?
+      --print("CarGroup: WeightHandler has changeWeight");
     }
   }
 
 class Main {
   def main() : void {
-    let numVertex = 80;
+    let numVertex = 60;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
-    let sp = new ShortestPaths();
-    --print("Main: ShortestPaths created.");
     let uq = new UpdateQueue(numVertex);
     --print("Main: UpdateQueue created.");
+    let sp = new ShortestPaths(uq);
+    --print("Main: ShortestPaths created.");
     let neighbourMap = get roadGraph.getNeighbourMap();
     let wh = new WeightHandler(numVertex, neighbourMap);
     --print("Main: WeightHandler created.");
@@ -406,27 +412,26 @@ class Main {
     let carGroupSeeds = randomSeq(numCarGroups, 0, 1000, 9363);
     let carGroups = new [CarGroup](numCarGroups);
     repeat i <- |carGroups| {
-      carGroups[i] = new CarGroup(carGroupSeeds[i], neighbourMap);
+      carGroups[i] = new CarGroup(carGroupSeeds[i], neighbourMap, numVertex);
     };
     --print("Main: CarGroups created.");
     let carGroupFuts = new [Fut void](numCarGroups);
 
     print("Main: Setup complete.");
     tic();
-    wh.start(roadGraph, sp, uq);
-    --print("Main: weight handler started.");
     repeat i <- |pathWorkers| {
       (pathWorkers[i]).start(uq, get sp.getNextVertexMap(), -- TODO next vertex map, pathworker should maybe access it through shortest paths instead
           neighbourMap, get roadGraph.getEdges());
     };
-    --print("Main: path workers started.");
+    print("Main: path workers started.");
     repeat i <- numCarGroups {
-      carGroupFuts[i] = (carGroups[i]).start();
+      carGroupFuts[i] = (carGroups[i]).start(wh, roadGraph, sp, uq);
     };
+    print("Main: Car Groups started.");
     repeat i <- numCarGroups {
       get carGroupFuts[i];
     };
-    --print("Main: Car Groups finished.");
+    print("Main: Car Groups finished.");
     let time = toc();
     print("Time: {} ms\n", time);
     print("Number of gets: {}\n", get sp.getGets());
@@ -435,6 +440,7 @@ class Main {
       puts = puts + (get (pathWorkers[i]).getPuts());
     };
     print("Number of puts: {}\n", puts);
+    -- TODO is the number of gets and puts still correctly counted in v2?
     embed void exit(EXIT_SUCCESS); end;
   }
 }
