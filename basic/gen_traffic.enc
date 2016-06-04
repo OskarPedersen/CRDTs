@@ -91,10 +91,12 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
   map : __SP_SET__
   -- TODO this could be just a matrix (almost entierly filled)
   gets : int
+  updateQueue : UpdateQueue
 
-  def init() : void {
+  def init(updateQueue : UpdateQueue) : void {
     this.map = new __SP_SET__();
     this.gets = 0;
+    this.updateQueue = updateQueue;
   }
 
   def getGets() : int {
@@ -103,8 +105,10 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
 
   def getNextVertex(current : int, goal : int) : int {
     this.gets = this.gets + 1;
+    while (not this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
+      ()
+    };
     get this.map.getValue(new FromTo(current, goal));
-    -- TODO how to handle if no path has been created yet
   }
 
   def getNextVertexMap() : __SP_SET__ {
@@ -140,6 +144,10 @@ class UpdateQueue
     }
   }
 
+  def empty() : bool {
+    this.list.size() == 0
+  }
+
 class PathWorker
   numVertex : int
   puts : int
@@ -159,8 +167,7 @@ class PathWorker
       suspend;
       let ft = get updateQueue.pop();
       if (ft == null) then {
-        ----print("PathWorker: Sleeping");
-        sleep(1); -- TODO what is best to do here?
+        ()
       } else {
           --print("PathWorker: Calculate path");
           this.calculatePath(ft, nextVertexMap, neighbourMap, edges);
@@ -234,6 +241,8 @@ class WeightHandler
   randomEdges : [VertexPair]
   randomWeightDeltas : [int]
   numVertex : int
+  randomEdgesIndex : int
+  randomWeightDeltasIndex : int
 
   def init(numVertex : int, neighbourMap : ActiveHashMap_int_List_int) : void {
     this.numVertex = numVertex;
@@ -250,40 +259,40 @@ class WeightHandler
     this.randomWeightDeltas = new [int](|wd|);
     repeat i <- |wd| {
       this.randomWeightDeltas[i] = wd[i] - maxDelta;
-    }
+    };
+
+    this.randomEdgesIndex = 0;
+    this.randomWeightDeltasIndex = 0;
   }
 
-  def start(roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
-    let randomEdgesIndex = 0;
-    let randomWeightDeltasIndex = 0;
-    while(true) { --TODO how/when to end this loop, ended by exit in main now
-      sleep(50); -- TODO how much to sleep here
-      let vp = this.randomEdges[randomEdgesIndex];
-      let weight = get roadGraph.getWeight(vp);
-      if (weight != -1) then { --All edges should be valid, but ...
-        let delta = this.randomWeightDeltas[randomWeightDeltasIndex];
-        --print("WeightHandler: Changing vertex {}-{} from weight {} with delta {}.\n", vp.a, vp.b, weight, delta);
-        roadGraph.updateWeight(vp, max(0, min(500, weight + delta)));
-        if (delta > 0) then {
-          this.recomputePathsIncreased(vp, shortestPaths, updateQueue);
-        } else if (delta < 0) then {
-          this.recomputePathsDecreased(vp, shortestPaths, updateQueue);
-        }
-      } else {
-        --print("Non valid edge in start in WeightHandler");
-        ()
-      };
+  def changeWeight(roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
 
-      randomEdgesIndex = randomEdgesIndex + 1;
-      if (randomEdgesIndex >= |this.randomEdges|) then {
-        randomEdgesIndex = 0;
-      };
+    let vp = this.randomEdges[this.randomEdgesIndex];
+    let weight = get roadGraph.getWeight(vp);
+    if (weight != -1) then { --All edges should be valid, but ...
+      let delta = this.randomWeightDeltas[this.randomWeightDeltasIndex];
+      --print("WeightHandler: Changing vertex {}-{} from weight {} with delta {}.\n", vp.a, vp.b, weight, delta);
+      roadGraph.updateWeight(vp, max(0, min(500, weight + delta)));
+      if (delta > 0) then {
+        this.recomputePathsIncreased(vp, shortestPaths, updateQueue);
+      } else if (delta < 0) then {
+        this.recomputePathsDecreased(vp, shortestPaths, updateQueue);
+      }
+    } else {
+      --print("Non valid edge in start in WeightHandler");
+      ()
+    };
 
-      randomWeightDeltasIndex = randomWeightDeltasIndex + 1;
-      if (randomWeightDeltasIndex >= |this.randomWeightDeltas|) then {
-        randomWeightDeltasIndex = 0;
-      };
-    }
+    this.randomEdgesIndex = this.randomEdgesIndex + 1;
+    if (this.randomEdgesIndex >= |this.randomEdges|) then {
+      this.randomEdgesIndex = 0;
+    };
+
+    this.randomWeightDeltasIndex = this.randomWeightDeltasIndex + 1;
+    if (this.randomWeightDeltasIndex >= |this.randomWeightDeltas|) then {
+      this.randomWeightDeltasIndex = 0;
+    };
+
   }
 
   def recomputePathsIncreased(vp : VertexPair, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
@@ -338,45 +347,31 @@ passive class Car
     if (current == goal) then {
       true
     } else {
+      this.next = get shortestPaths.getNextVertex(this.current, this.goal);
       false
     }
-
-    ---------------
-    let goalReached = false;
-    while (not goalReached) {
-      let time = get roadGraph.getWeight(new VertexPair(this.current, this.next));
-      if (time == -1) then {
-        --print("Bad edge in travel in Car. Current: {}, next: {}", this.current, this.next);
-        ()
-      } else {
-        --print("Car: Sleeping {}\n", time);
-        --sleep(time / 10);
-        ()
-      };
-      this.current = this.next;
-      if (this.current == this.goal) then {
-        goalReached = true;
-        --print("Car: goal reached.");
-      } else {
-        this.next = get shortestPaths.getNextVertex(this.current, this.goal);
-        while (this.next == -1) {
-          --sleep(1); -- TODO better way to do this, if present this sleep seams to have quite large impact on run time
-          --print("Car: next vertex == -1");
-          this.next = get shortestPaths.getNextVertex(this.current, this.goal);
-        }
-      }
-    };
-    true
   }
 
 class CarGroup
   cars : [Car]
 
-  def init() : void {
+  def init(seed : int, neighbourMap : ActiveHashMap_int_List_int) : void {
+    let numCars = 10;
+    this.cars = new [Car](numCars);
+    let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, seed);
 
+    repeat i <- numCars {
+      let start = carNodes[i * 2];
+      let next =  (get neighbourMap.getValue(carNodes[i * 2])).at(0); -- TODO get random neighbour
+      let goal = carNodes[i * 2 + 1];
+      if (start == goal) then {
+        goal = next; -- TODO this might not be the best thing to do here, but...
+      };
+      this.cars[i] = new Car(start, next, goal);
+    };
   }
 
-  def start() : void {
+  def start(weightHandler : WeightHandler) : void {
     let finished = false;
     while (not finished) {
       finished = true;
@@ -386,7 +381,7 @@ class CarGroup
         }
       };
 
-      weightHandler.changeWeight();
+      get? weightHandler.changeWeight();
     }
   }
 
@@ -407,21 +402,15 @@ class Main {
       pathWorkers[i] = new PathWorker(numVertex);
     };
     --print("Main: PathWorkers created.");
-    let numCars = 10;
-    let carFuts = new [Fut bool](numCars);
-    let cars = new [Car](numCars);
-
-    let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, 4135);
-    repeat i <- numCars {
-      let start = carNodes[i * 2];
-      let next =  (get neighbourMap.getValue(carNodes[i * 2])).at(0); -- TODO get random neighbour
-      let goal = carNodes[i * 2 + 1];
-      if (start == goal) then {
-        goal = next; -- TODO this might not be the best thing to do here, but...
-      };
-      cars[i] = new Car(start, next, goal);
+    let numCarGroups = 8;
+    let carGroupSeeds = randomSeq(numCarGroups, 0, 1000, 9363);
+    let carGroups = new [CarGroup](numCarGroups);
+    repeat i <- |carGroups| {
+      carGroups[i] = new CarGroup(carGroupSeeds[i], neighbourMap);
     };
-    --print("Main: Cars created.");
+    --print("Main: CarGroups created.");
+    let carGroupFuts = new [Fut void](numCarGroups);
+
     print("Main: Setup complete.");
     tic();
     wh.start(roadGraph, sp, uq);
@@ -431,14 +420,13 @@ class Main {
           neighbourMap, get roadGraph.getEdges());
     };
     --print("Main: path workers started.");
-    repeat i <- numCars {
-      carFuts[i] = (cars[i]).travel(roadGraph, sp);
+    repeat i <- numCarGroups {
+      carGroupFuts[i] = (carGroups[i]).start();
     };
-    --print("Main: cars traveling.");
-    repeat i <- numCars {
-      get carFuts[i];
+    repeat i <- numCarGroups {
+      get carGroupFuts[i];
     };
-    --print("Main: cars finished.");
+    --print("Main: Car Groups finished.");
     let time = toc();
     print("Time: {} ms\n", time);
     print("Number of gets: {}\n", get sp.getGets());
