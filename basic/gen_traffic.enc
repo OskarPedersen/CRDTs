@@ -7,13 +7,24 @@ class RoadGraph
   neighbourMap : ActiveHashMap_int_List_int -- TODO ^ They should be read only except for initialization
   -- TODO ^ these two should also be of parallel maps!
 
+  edgesPuts : int
+  edgesGets : int
+
+  neighbourPuts : int
+  neighbourGets : int
+
   def init(numVertex : int) : void {
     --this.vertices = new HashSet_int();
     --repeat i <- numVertex {
     --  this.vertices.add(i);
     --};
     this.edges = new ActiveHashMap_VertexPair_int();
+    this.edgesPuts = 0;
+    this.edgesGets = 0;
     this.neighbourMap = new ActiveHashMap_int_List_int();
+    this.neighbourGets = 0;
+    this.neighbourPuts = 0;
+
     let min = 0;
     let max = 5;
     let seed = 7894;
@@ -47,6 +58,22 @@ class RoadGraph
     }
   }
 
+  def getEdgesGets() : int {
+    this.edgesGets
+  }
+
+  def getEdgesPuts() : int {
+    this.edgesPuts
+  }
+
+  def getNeighbourGets() : int {
+    this.neighbourGets
+  }
+
+  def getNeighbourPuts() : int {
+    this.neighbourPuts
+  }
+
   def getEdges() : ActiveHashMap_VertexPair_int {
     this.edges
   }
@@ -54,11 +81,14 @@ class RoadGraph
   def addEdge(pair : VertexPair) : void {
     let initialEdgeWeight = 100;
     this.edges.put(pair, initialEdgeWeight);
+    this.edgesPuts = this.edgesPuts + 1;
     this.addNeighbour(pair.a, pair.b);
     this.addNeighbour(pair.b, pair.a);
   }
 
   def addNeighbour(vertex : int, neighbour : int) : void {
+    this.neighbourGets = this.neighbourGets + 1;
+    this.neighbourPuts = this.neighbourPuts + 1;
     let neighbourList = get this.neighbourMap.getValue(vertex);
     if (neighbourList == null) then {
       neighbourList = new List_int();
@@ -75,10 +105,12 @@ class RoadGraph
   }
 
   def getWeight(vp : VertexPair) : int {
+    this.edgesGets = this.edgesGets + 1;
     get this.edges.getValue(vp);
   }
 
   def updateWeight(vp : VertexPair, newWeight : int) : void {
+    this.edgesPuts = this.edgesPuts + 1;
     this.edges.put(vp, newWeight);
   }
 
@@ -151,6 +183,21 @@ class UpdateQueue
 
   }
 
+  def getEdgesGets() : int {
+    let gets = 0;
+    repeat i <- |this.pathWorkers| {
+      gets = gets + get (this.pathWorkers[i]).getEdgesGets()
+    };
+    gets
+  }
+
+  def getNeighbourGets() : int {
+    let gets = 0;
+    repeat i <- |this.pathWorkers| {
+      gets = gets + get (this.pathWorkers[i]).getNeighbourGets()
+    };
+    gets
+  }
 
   def push(ft : FromTo) : void {
     --this.list.add(ft)
@@ -188,14 +235,25 @@ class UpdateQueue
 class PathWorker
   numVertex : int
   puts : int
+  edgesGets : int
+  neighbourGets : int
 
   def init(numVertex : int) : void {
     this.numVertex = numVertex;
     this.puts = 0;
+    this.edgesGets = 0;
   }
 
   def getPuts() : int {
     this.puts;
+  }
+
+  def getEdgesGets() : int {
+    this.edgesGets
+  }
+
+  def getNeighbourGets() : int {
+    this.neighbourGets
   }
 
 {-  def start(updateQueue : UpdateQueue, nextVertexMap : __SP_SET__,
@@ -244,10 +302,12 @@ class PathWorker
       if (minVertex == ft.to) then {
         break = true;
       } else {
+        this.neighbourGets = this.neighbourGets + 1;
         let neighbours = get neighbourMap.getValue(minVertex);
         repeat i <- neighbours.size() {
           let n = neighbours.at(i);
           ----print("PathWorker: n {}\n", n);
+          this.edgesGets = this.edgesGets + 1;
           let edgeDis = get edges.getValue(new VertexPair(minVertex, n));
           let alt = dist[minVertex] + edgeDis;
           if (alt < dist[n]) then {
@@ -287,6 +347,7 @@ class WeightHandler
     let neighbours = randomSeq(|vertices|, 0, intMax(), 9465);
     this.randomEdges = new [VertexPair](|vertices|);
     repeat i <- |vertices| {
+      -- TODO neighbourGets
       let nl = get neighbourMap.getValue(vertices[i]);
       this.randomEdges[i] = new VertexPair(vertices[i], nl.at(neighbours[i] % nl.size()));
     };
@@ -430,7 +491,7 @@ class CarGroup
 
 class Main {
   def main() : void {
-    let numVertex = 70;
+    let numVertex = 50;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
 
@@ -455,7 +516,7 @@ class Main {
     let carGroupFuts = new [Fut void](numCarGroups);
 
     print("Main: Setup complete.");
-    tic();
+    tic(); -- TODO TODO should we measure the setup time as well?
     repeat i <- numVertex {
       repeat j <- numVertex {
         if (i < j) then {
@@ -478,9 +539,19 @@ class Main {
     print("Time: {} ms\n", time);
     print("Number of gets: {}\n", get sp.getGets());
     let puts = get uq.getPuts();
-
     print("Number of puts: {}\n", puts);
-    -- TODO is the number of gets and puts still correctly counted in v2?
+
+    let edgePuts = get roadGraph.getEdgesPuts();
+    let edgeGetsRG = get roadGraph.getEdgesGets();
+    let edgeGetsUQ = get uq.getEdgesGets();
+    print("Number of edge gets: {}\n", (edgeGetsRG + edgeGetsUQ));
+    print("Number of edge puts: {}\n", (edgePuts));
+
+    let neighbourPuts = get roadGraph.getNeighbourPuts();
+    let neighbourGetsRG = get roadGraph.getNeighbourGets();
+    let neighbourGetsUQ = get uq.getNeighbourGets();
+    print("Number of neighbour gets: {}\n", (neighbourGetsUQ + neighbourGetsRG));
+    print("Number of neighbour puts: {}\n", neighbourPuts);
     embed void exit(EXIT_SUCCESS); end;
   }
 }
