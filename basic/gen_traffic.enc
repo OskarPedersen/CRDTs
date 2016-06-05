@@ -87,15 +87,19 @@ class RoadGraph
   }
 
 
-class ShortestPaths --TODO will this class be more than just an active hashmap?
+class ShortestPaths
   map : __SP_SET__
   -- TODO this could be just a matrix (almost entierly filled)
   gets : int
   updateQueue : UpdateQueue
 
-  def init(updateQueue : UpdateQueue) : void {
+  def init() : void {
     this.map = new __SP_SET__();
     this.gets = 0;
+
+  }
+
+  def setUpdateQueue(updateQueue : UpdateQueue) : void {
     this.updateQueue = updateQueue;
   }
 
@@ -105,10 +109,13 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
 
   def getNextVertex(current : int, goal : int) : int {
     this.gets = this.gets + 1;
+    --let dbgSpins = 0;
     while (not get this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
       --print("ShortestPaths: queue not empty");
+      --dbgSpins = dbgSpins + 1;
       ()
     };
+    --print("ShortestPaths: spins {}\n", dbgSpins);
     --print("ShortestPaths: queue empty");
     get this.map.getValue(new FromTo(current, goal));
   }
@@ -118,25 +125,51 @@ class ShortestPaths --TODO will this class be more than just an active hashmap?
   }
 
 class UpdateQueue
-  list : List_FromTo
-  def init(numVertex : int) : void {
-    this.list = new List_FromTo();
-    repeat i <- numVertex {
-      repeat j <- numVertex {
-        if (i < j) then {
-          this.push(new FromTo(i, j));
-          -- We only push one of each path since i j == j i and both will be calculated at the same time
-        }
-      }
+  --list : List_FromTo
+  pathWorkers : [PathWorker]
+  nextWorker : int
+  nextVertexMap : __SP_SET__
+  neighbourMap : ActiveHashMap_int_List_int
+  edges : ActiveHashMap_VertexPair_int
+
+  def init(numVertex : int, nextVertexMap : __SP_SET__,
+      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
+    this.nextVertexMap = nextVertexMap;
+    this.neighbourMap = neighbourMap;
+    this.edges = edges;
+
+    this.nextWorker = 0;
+    this.pathWorkers = new [PathWorker](4);
+    repeat i <- |this.pathWorkers| {
+      this.pathWorkers[i] = new PathWorker(numVertex);
     };
+    --print("Main: PathWorkers created.");
+
+    --this.list = new List_FromTo();
+
     --print("UpdateQueue: init done");
+
   }
+
 
   def push(ft : FromTo) : void {
-    this.list.add(ft)
+    --this.list.add(ft)
+    get (this.pathWorkers[this.nextWorker]).calculatePath(ft, this.nextVertexMap,  this.neighbourMap, this.edges);
+    this.nextWorker = this.nextWorker + 1;
+    if (this.nextWorker >= |this.pathWorkers|) then {
+      this.nextWorker = 0;
+    }
   }
 
-  def pop() : FromTo {
+  def getPuts() : int {
+    let puts = 0;
+    repeat i <- |this.pathWorkers| {
+      puts = puts + (get (this.pathWorkers[i]).getPuts());
+    };
+    puts
+  }
+
+  {- def pop() : FromTo {
     let size = this.list.size();
     if (size > 0) then {
       let path = this.list.at(size - 1);
@@ -145,10 +178,11 @@ class UpdateQueue
     } else {
       null : FromTo
     }
-  }
+  } -}
 
   def empty() : bool {
-    this.list.size() == 0
+    --this.list.size() == 0
+    true
   }
 
 class PathWorker
@@ -164,7 +198,7 @@ class PathWorker
     this.puts;
   }
 
-  def start(updateQueue : UpdateQueue, nextVertexMap : __SP_SET__,
+{-  def start(updateQueue : UpdateQueue, nextVertexMap : __SP_SET__,
       neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
     while (true) { -- how/when should this end?
       suspend;
@@ -177,7 +211,7 @@ class PathWorker
           --print("PathWorker: Finished calculating path");
       }
     }
-  }
+  } -}
 
   def calculatePath(ft : FromTo, nextVertexMap : __SP_SET__,
       neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
@@ -348,10 +382,13 @@ passive class Car
     if (this.current == this.goal) then {
       true
     } else {
+      let dbgSpins = 0;
       let next = get shortestPaths.getNextVertex(this.current, this.goal);
       while (next == -1) { -- TODO why is this spin needed?
         next = get shortestPaths.getNextVertex(this.current, this.goal);
+        dbgSpins = dbgSpins + 1;
       };
+      print("Car: Travel spins: {}\n", dbgSpins);
       this.current = next;
       --print("Car: current {}\n", this.current);
       false
@@ -362,7 +399,7 @@ class CarGroup
   cars : [Car]
 
   def init(seed : int, neighbourMap : ActiveHashMap_int_List_int, numVertex : int) : void {
-    let numCars = 10;
+    let numCars = 1;
     this.cars = new [Car](numCars);
     let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, seed);
 
@@ -393,22 +430,22 @@ class CarGroup
 
 class Main {
   def main() : void {
-    let numVertex = 60;
+    let numVertex = 70;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
-    let uq = new UpdateQueue(numVertex);
-    --print("Main: UpdateQueue created.");
-    let sp = new ShortestPaths(uq);
+
+    let sp = new ShortestPaths();
     --print("Main: ShortestPaths created.");
     let neighbourMap = get roadGraph.getNeighbourMap();
     let wh = new WeightHandler(numVertex, neighbourMap);
     --print("Main: WeightHandler created.");
-    let pathWorkers = new [PathWorker](4);
-    repeat i <- |pathWorkers| {
-      pathWorkers[i] = new PathWorker(numVertex);
-    };
-    --print("Main: PathWorkers created.");
-    let numCarGroups = 8;
+    let uq = new UpdateQueue(numVertex, get sp.getNextVertexMap(),
+        neighbourMap, get roadGraph.getEdges());
+    sp.setUpdateQueue(uq);
+    --print("Main: UpdateQueue created.");
+
+
+    let numCarGroups = 4;
     let carGroupSeeds = randomSeq(numCarGroups, 0, 1000, 9363);
     let carGroups = new [CarGroup](numCarGroups);
     repeat i <- |carGroups| {
@@ -419,11 +456,16 @@ class Main {
 
     print("Main: Setup complete.");
     tic();
-    repeat i <- |pathWorkers| {
-      (pathWorkers[i]).start(uq, get sp.getNextVertexMap(), -- TODO next vertex map, pathworker should maybe access it through shortest paths instead
-          neighbourMap, get roadGraph.getEdges());
+    repeat i <- numVertex {
+      repeat j <- numVertex {
+        if (i < j) then {
+          uq.push(new FromTo(i, j));
+          -- We only push one of each path since i j == j i and both will be calculated at the same time
+          ()
+        }
+      }
     };
-    print("Main: path workers started.");
+    print("Main: Initial paths pushed");
     repeat i <- numCarGroups {
       carGroupFuts[i] = (carGroups[i]).start(wh, roadGraph, sp, uq);
     };
@@ -435,10 +477,8 @@ class Main {
     let time = toc();
     print("Time: {} ms\n", time);
     print("Number of gets: {}\n", get sp.getGets());
-    let puts = 0;
-    repeat i <- |pathWorkers| {
-      puts = puts + (get (pathWorkers[i]).getPuts());
-    };
+    let puts = get uq.getPuts();
+
     print("Number of puts: {}\n", puts);
     -- TODO is the number of gets and puts still correctly counted in v2?
     embed void exit(EXIT_SUCCESS); end;
