@@ -61,7 +61,32 @@ for t in hs_t:
 outf.close()
 
 
-t_set = ['ActiveHashMap_FromTo_int', 'SubMap', 'DivTimeMap', 'OpOrMap']
+pm_k = ['FromTo', 'VertexPair_int ', 'int']
+pm_v = ['int', 'int', 'List_int']
+pm_v_null = ['-1', '-1', 'null : List_int']
+pm_to = ['key.from + key.to * 73', 'key.a + key.b * 73', 'key * 73']
+pm_infs = ['gen_map_div_time.enc', 'gen_map_op_or.enc', 'gen_map_sub.enc']
+pm_b = ['map_div_time', 'map_op_or', 'map_sub']
+bi = 0
+for inf in pm_infs:
+    pm_gen = inf.read()
+    inf.close()
+    pm_outf = open(inf[4:], 'w')
+    pm_outf.write('bundle' + pm_b[bi] + 'where')
+    i = 0
+    for k in pm_k:
+        res = pm_gen.replace('__KEY__', pm_k[i])
+        replace('__VALUE__', pm_v[i])
+        replace('__TOINT__', pm_to[i])
+        replace('__VALUE_NULL__', pm_v_null[i])
+        pm_outf.write(res)
+        i = i + 1
+    pm_out.close()
+    bi = bi + 1
+
+t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
+t_set_edge = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
+t_set_neighbours = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
 #t_get = ['get', '']
 t_inf = open('gen_traffic.enc', 'r')
 t_gen = t_inf.read()
@@ -70,7 +95,8 @@ i = 0
 for t in t_set:
     t_outf = open('traffic-' + t + '.enc', 'w')
     res = t_gen.replace('__SP_SET__', t)
-    #res = res.replace('__SP_GET__', t_get[i])
+    res = res.replace('__E_SET__', t_set_edge[i])
+    res = res.replace('__N_SET__', t_set_neighbours[i])
     t_outf.write(res)
     t_outf.close()
     i = i + 1

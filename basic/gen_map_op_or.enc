@@ -1,0 +1,103 @@
+class LocalMap___KEY_____VALUE__
+  localMaps : [LocalMap___KEY_____VALUE__]
+  idCounter : int
+  idUpper : int
+
+  hashMap : HashMap___KEY___HashSet_IDValue___VALUE__
+
+  setID : int
+
+  def init(setID : int) : void {
+    this.idCounter = -1;
+    this.hashMap = new HashMap___KEY___HashSet_IDValue___VALUE__();
+    this.setID = setID;
+  }
+
+  def setup(localMaps : [LocalMap___KEY_____VALUE__], idUpper : int) : void {
+    this.localMaps = localMaps;
+    this.idUpper = idUpper;
+  }
+
+  def nextID() : int {
+    -- IDs ordered by nodes
+    this.idCounter = this.idCounter + 1;
+    this.idUpper + this.idCounter;
+  }
+
+  def put(key : __KEY__, value : __VALUE__) : void {
+    let id = this.nextID();
+    repeat i <- |this.localMaps| {
+      if (i == this.setID) then {
+        this.putDownstream(key, value, id)
+      } else {
+        this.localMaps[i]!putDownstream(key, value, id)
+      }
+    }
+  }
+
+  def putDownstream(key : __KEY__, value : __VALUE__, id : int) : void {
+    let set = this.hashMap.getValue(key);
+    if (set == null) then {
+      let newset = new HashSet_IDValue___VALUE__();
+      newset.add(new IDValue___VALUE__(id, value));
+      this.hashMap.put(key, newset);
+    } else {
+      set.add(new IDValue___VALUE__(id, value));
+    }
+  }
+
+  def getValue(key : __KEY__) : __VALUE__ {
+    let set = this.hashMap.getValue(key);
+    if (set != null) then {
+      let maxID = -1;
+      let maxNext = __VALUE_NULL__;
+      let iter = set.iterator();
+      let break = false;
+      while (not break) {
+        let idNext = iter.next();
+        if (idNext == null) then {
+          break = true;
+        } else {
+          if (idNext.id > maxID) then {
+            maxID = idNext.id;
+            maxNext = idNext.next;
+          }
+        }
+      };
+      maxNext;
+    } else {
+      __VALUE_NULL__
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class OpOrMap
+  localMaps : [LocalMap___KEY_____VALUE__]
+
+  def init() : void {
+    this.localMaps = new [LocalMap___KEY_____VALUE__](numcores());
+    repeat i <- |this.localMaps| {
+      this.localMaps[i] = new LocalMap___KEY_____VALUE__(i)
+    };
+    repeat i <- |this.localMaps| {
+      (this.localMaps[i]).setup(this.localMaps, (intMax() / |this.localMaps|) * i)
+    }
+  }
+
+
+  def put(key : __KEY__, value : __VALUE__) : void {
+    (this.localMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : __KEY__) : Fut __VALUE__ {
+    (this.localMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.localMaps| {
+      get (this.localMaps[i]).wait()
+    }
+  }

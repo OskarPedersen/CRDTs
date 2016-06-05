@@ -1,0 +1,30 @@
+
+
+passive class SubMap___KEY_____VALUE__
+  subMaps : [ActiveHashMap___KEY_____VALUE__]
+
+  def init () : void {
+    let nc = numcores();
+    this.subMaps = new [ActiveHashMap___KEY_____VALUE__](nc);
+    repeat i <- nc {
+      this.subMaps[i] = new ActiveHashMap___KEY_____VALUE__()
+    }
+  }
+
+  def put(key : __KEY__, next : __VALUE__) : void {
+    (this.subMaps[this.hash(key)]).put(key, next)
+  }
+
+  def getValue(key : __KEY__) : Fut __VALUE__ {
+    (this.subMaps[this.hash(key)]).getValue(key)
+  }
+
+  def hash(key : __KEY__) : int {
+    __TOINT__ % |this.subMaps|
+  }
+
+  def wait() : void {
+    repeat i <- |this.subMaps| {
+      get (this.subMaps[i]).wait();
+    }
+  }

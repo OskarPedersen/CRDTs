@@ -74,6 +74,44 @@ passive class IDNext
     this.id + this.next * 73
   }
 
+----------- BEGINNING of manually created 'generic' IDValue --------------
+
+passive class IDValue_int
+  id : int
+  value : int
+
+  def init(id : int, value : int) : void {
+    this.id = id;
+    this.value = value;
+  }
+
+  def equals(n : IDValue_int) : bool {
+    (this.id == n.id) and (this.value == n.value);
+  }
+
+  def toInt() : int {
+    this.id + this.value * 73
+  }
+
+passive class IDValue_List_int
+  id : int
+  value : List_int
+
+  def init(id : int, value : List_int) : void {
+    this.id = id;
+    this.value = value;
+  }
+
+  def equals(n : IDValue_List_int) : bool {
+    let addressA = embed int ((int64_t )#{this.value}); end;
+    let addressB = embed int ((int64_t )#{n}); end;
+    (this.id == n.id) and (addressA == addressB);
+  }
+
+  def toInt() : int {
+    this.id + embed int ((int64_t )#{this.value}); end
+  }
+----------- END of manually created 'generic' IDValue ---------------
 
 passive class NodeID
   time : int

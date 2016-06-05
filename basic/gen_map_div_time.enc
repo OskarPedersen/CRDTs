@@ -1,0 +1,65 @@
+class DistMap___KEY_____VALUE__
+  id : int
+  maps : [ActiveHashMap___KEY___TimeValue]
+
+  def init(id : int, maps : [ActiveHashMap___KEY___TimeValue]) : void {
+    this.id = id;
+    this.maps = maps;
+  }
+
+  def put(key : __KEY__, value : __VALUE__) : void {
+    (this.maps[this.id]).put(key, new TimeValue(value))
+  }
+
+  def getValue(key : __KEY__) : __VALUE__ {
+    let futs = new [Fut TimeValue](|this.maps|);
+    let latestTime = -1;
+    let latestValue = -1;
+    repeat i <- |this.maps| {
+      futs[i] = (this.maps[i]).getValue(key)
+    };
+    repeat i <- |this.maps| {
+      let timeValue = get (futs[i]);
+      if (timeValue != null) then {
+        if (timeValue.time > latestTime) then {
+          latestTime = timeValue.time;
+          latestValue = timeValue.value;
+        }
+      }
+    };
+    latestValue;
+  }
+
+  def wait() : void
+    ()
+
+passive class DivTimeMap___KEY_____VALUE__
+  distMaps : [DistMap___KEY_____VALUE__]
+  maps : [ActiveHashMap___KEY___TimeValue]
+
+  def init() : void {
+    let nc = numcores();
+    this.distMaps = new [DistMap___KEY_____VALUE__](nc);
+    this.maps = new [ActiveHashMap___KEY___TimeValue](nc);
+    repeat i <- nc {
+      this.maps[i] = new ActiveHashMap___KEY___TimeValue();
+    };
+    repeat i <- nc {
+      this.distMaps[i] = new DistMap___KEY_____VALUE__(i, this.maps);
+    }
+  }
+
+  def put(key : __KEY__, value : __VALUE__) : void {
+    (this.distMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : __KEY__) : Fut __VALUE__ {
+    (this.distMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.distMaps| {
+      get (this.distMaps[i]).wait();
+      get (this.maps[i]).wait();
+    }
+  }
