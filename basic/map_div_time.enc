@@ -1,26 +1,24 @@
 bundle map_div_time where
 
-
-
-class DistMap
+class DistMap_FromTo_int
   id : int
-  maps : [ActiveHashMap_FromTo_TimeValue]
+  maps : [ActiveHashMap_FromTo_TimeValue_int]
 
-  def init(id : int, maps : [ActiveHashMap_FromTo_TimeValue]) : void {
+  def init(id : int, maps : [ActiveHashMap_FromTo_TimeValue_int]) : void {
     this.id = id;
     this.maps = maps;
   }
 
-  def put(ft : FromTo, next : int) : void {
-    (this.maps[this.id]).put(ft, new TimeValue(next))
+  def put(key : FromTo, value : int) : void {
+    (this.maps[this.id]).put(key, new TimeValue_int(value))
   }
 
-  def getValue(ft : FromTo) : int {
-    let futs = new [Fut TimeValue](|this.maps|);
+  def getValue(key : FromTo) : int {
+    let futs = new [Fut TimeValue_int](|this.maps|);
     let latestTime = -1;
     let latestValue = -1;
     repeat i <- |this.maps| {
-      futs[i] = (this.maps[i]).getValue(ft)
+      futs[i] = (this.maps[i]).getValue(key)
     };
     repeat i <- |this.maps| {
       let timeValue = get (futs[i]);
@@ -37,28 +35,162 @@ class DistMap
   def wait() : void
     ()
 
-passive class DivTimeMap
-  distMaps : [DistMap]
-  maps : [ActiveHashMap_FromTo_TimeValue]
+passive class DivTimeMap_FromTo_int
+  distMaps : [DistMap_FromTo_int]
+  maps : [ActiveHashMap_FromTo_TimeValue_int]
 
   def init() : void {
     let nc = numcores();
-    this.distMaps = new [DistMap](nc);
-    this.maps = new [ActiveHashMap_FromTo_TimeValue](nc);
+    this.distMaps = new [DistMap_FromTo_int](nc);
+    this.maps = new [ActiveHashMap_FromTo_TimeValue_int](nc);
     repeat i <- nc {
-      this.maps[i] = new ActiveHashMap_FromTo_TimeValue();
+      this.maps[i] = new ActiveHashMap_FromTo_TimeValue_int();
     };
     repeat i <- nc {
-      this.distMaps[i] = new DistMap(i, this.maps);
+      this.distMaps[i] = new DistMap_FromTo_int(i, this.maps);
     }
   }
 
-  def put(ft : FromTo, next : int) : void {
-    (this.distMaps[core()]).put(ft, next)
+  def put(key : FromTo, value : int) : void {
+    (this.distMaps[core()]).put(key, value)
   }
 
-  def getValue(ft : FromTo) : Fut int {
-    (this.distMaps[core()]).getValue(ft)
+  def getValue(key : FromTo) : Fut int {
+    (this.distMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.distMaps| {
+      get (this.distMaps[i]).wait();
+      get (this.maps[i]).wait();
+    }
+  }
+
+
+class DistMap_VertexPair_int
+  id : int
+  maps : [ActiveHashMap_VertexPair_TimeValue_int]
+
+  def init(id : int, maps : [ActiveHashMap_VertexPair_TimeValue_int]) : void {
+    this.id = id;
+    this.maps = maps;
+  }
+
+  def put(key : VertexPair, value : int) : void {
+    (this.maps[this.id]).put(key, new TimeValue_int(value))
+  }
+
+  def getValue(key : VertexPair) : int {
+    let futs = new [Fut TimeValue_int](|this.maps|);
+    let latestTime = -1;
+    let latestValue = -1;
+    repeat i <- |this.maps| {
+      futs[i] = (this.maps[i]).getValue(key)
+    };
+    repeat i <- |this.maps| {
+      let timeValue = get (futs[i]);
+      if (timeValue != null) then {
+        if (timeValue.time > latestTime) then {
+          latestTime = timeValue.time;
+          latestValue = timeValue.value;
+        }
+      }
+    };
+    latestValue;
+  }
+
+  def wait() : void
+    ()
+
+passive class DivTimeMap_VertexPair_int
+  distMaps : [DistMap_VertexPair_int]
+  maps : [ActiveHashMap_VertexPair_TimeValue_int]
+
+  def init() : void {
+    let nc = numcores();
+    this.distMaps = new [DistMap_VertexPair_int](nc);
+    this.maps = new [ActiveHashMap_VertexPair_TimeValue_int](nc);
+    repeat i <- nc {
+      this.maps[i] = new ActiveHashMap_VertexPair_TimeValue_int();
+    };
+    repeat i <- nc {
+      this.distMaps[i] = new DistMap_VertexPair_int(i, this.maps);
+    }
+  }
+
+  def put(key : VertexPair, value : int) : void {
+    (this.distMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : VertexPair) : Fut int {
+    (this.distMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.distMaps| {
+      get (this.distMaps[i]).wait();
+      get (this.maps[i]).wait();
+    }
+  }
+
+
+class DistMap_int_List_int
+  id : int
+  maps : [ActiveHashMap_int_TimeValue_List_int]
+
+  def init(id : int, maps : [ActiveHashMap_int_TimeValue_List_int]) : void {
+    this.id = id;
+    this.maps = maps;
+  }
+
+  def put(key : int, value : List_int) : void {
+    (this.maps[this.id]).put(key, new TimeValue_List_int(value))
+  }
+
+  def getValue(key : int) : List_int {
+    let futs = new [Fut TimeValue_List_int](|this.maps|);
+    let latestTime = -1;
+    let latestValue = null : List_int;
+    repeat i <- |this.maps| {
+      futs[i] = (this.maps[i]).getValue(key)
+    };
+    repeat i <- |this.maps| {
+      let timeValue = get (futs[i]);
+      if (timeValue != null) then {
+        if (timeValue.time > latestTime) then {
+          latestTime = timeValue.time;
+          latestValue = timeValue.value;
+        }
+      }
+    };
+    latestValue;
+  }
+
+  def wait() : void
+    ()
+
+passive class DivTimeMap_int_List_int
+  distMaps : [DistMap_int_List_int]
+  maps : [ActiveHashMap_int_TimeValue_List_int]
+
+  def init() : void {
+    let nc = numcores();
+    this.distMaps = new [DistMap_int_List_int](nc);
+    this.maps = new [ActiveHashMap_int_TimeValue_List_int](nc);
+    repeat i <- nc {
+      this.maps[i] = new ActiveHashMap_int_TimeValue_List_int();
+    };
+    repeat i <- nc {
+      this.distMaps[i] = new DistMap_int_List_int(i, this.maps);
+    }
+  }
+
+  def put(key : int, value : List_int) : void {
+    (this.distMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : int) : Fut List_int {
+    (this.distMaps[core()]).getValue(key)
   }
 
   def wait() : void {

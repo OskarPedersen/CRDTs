@@ -1,25 +1,106 @@
+IDValues = """
+----------- BEGINNING of manually created 'generic' IDValue and TimeValue --------------
+--- They are put here so that they know of list, but collections.enc is re genereated
+passive class IDValue_int
+  id : int
+  value : int
+
+  def init(id : int, value : int) : void {
+    this.id = id;
+    this.value = value;
+  }
+
+  def equals(n : IDValue_int) : bool {
+    (this.id == n.id) and (this.value == n.value);
+  }
+
+  def toInt() : int {
+    this.id + this.value * 73
+  }
+
+passive class IDValue_List_int
+  id : int
+  value : List_int
+
+  def init(id : int, value : List_int) : void {
+    this.id = id;
+    this.value = value;
+  }
+
+  def equals(n : IDValue_List_int) : bool {
+    let value = this.value;
+    let addressA = embed int ((int64_t )#{value}); end;
+    let addressB = embed int ((int64_t )#{n}); end;
+    (this.id == n.id) and (addressA == addressB);
+  }
+
+  def toInt() : int {
+    let value = this.value;
+    this.id + embed int ((int64_t )#{value}); end
+  }
+
+
+
+passive class TimeValue_int
+    time : int
+    value : int
+
+    def init(value : int) : void {
+      this.time = currentTime();
+      this.value = value;
+    }
+
+    def toInt() : int {
+      this.time + this.value * 73
+    }
+
+passive class TimeValue_List_int
+    time : int
+    value : List_int
+
+    def init(value : List_int) : void {
+      this.time = currentTime();
+      this.value = value;
+    }
+
+    def toInt() : int {
+      let value = this.value;
+      this.time + embed int ((int64_t )#{value}); end
+    }
+----------- END of manually created 'generic' IDValue and TimeValue---------------
+
+
+"""
+
 list_t = ['int', 'HashMapEntry_int_int', 'HashMapEntry_int_TimeOp',
     'HashMapEntry_int_HashSet_int', 'HashMapEntry_NodeID_RGANode',
     'HashMapEntry_NodeID_int', 'HashMapEntry_VertexPair_int', 'FromTo',
     'HashMapEntry_int_List_int', 'HashMapEntry_FromTo_int',
     'HashMapEntry_FromTo_TimeValue', 'HashMapEntry_FromTo_HashSet_int',
-    'HashMapEntry_FromTo_HashSet_IDNext', 'HashMapEntry_IDNext_int']
+    'HashMapEntry_FromTo_HashSet_IDNext', 'HashMapEntry_IDNext_int',
+    'HashMapEntry_IDValue_List_int_int', 'HashMapEntry_IDValue_int_int',
+    'HashMapEntry_int_HashSet_IDValue_List_int',
+    'HashMapEntry_VertexPair_HashSet_IDValue_int',
+    'HashMapEntry_FromTo_HashSet_IDValue_int', 'HashMapEntry_int_TimeValue',
+    'HashMapEntry_VertexPair_TimeValue', 'HashMapEntry_int_TimeValue_List_int',
+    'HashMapEntry_VertexPair_TimeValue_int', 'HashMapEntry_FromTo_TimeValue_int']
 list_inf = open('gen_list.enc', 'r')
 list_gen = list_inf.read()
 list_inf.close()
 outf = open('collections.enc', 'w')
 outf.write('bundle collections where\n')
 outf.write('import collections_data\n')
+outf.write(IDValues)
 for l in list_t:
     outf.write(list_gen.replace('__TYPE__', l))
 
 
-hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int',              'FromTo',       'FromTo',           'FromTo',               'FromTo',               'IDNext']
-hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int',         'int',          'TimeValue',        'HashSet_int',          'HashSet_IDNext',       'int']
-hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b',           'a.equals(b)',  'a.equals(b)',      'a.equals(b)',          'a.equals(b)',          'a.equals(b)']
-hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a',                'a.toInt()',    'a.toInt()',        'a.toInt()',            'a.toInt()',            'a.toInt()']
-hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1',              'null',         'null',             'null',                 'null',                 'null']
-hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int', '-1',           'null : TimeValue', 'null : HashSet_int',   'null : HashSet_IDNext','-1']
+hm_k =      ['int',     'int',          'int',                 'NodeID',        'NodeID',       'VertexPair',   'int',              'FromTo',       'FromTo',           'FromTo',               'FromTo',               'IDNext',       'int',                              'IDValue_int',  'IDValue_List_int', 'VertexPair',               'FromTo',                       'int',              'VertexPair',       'int',                      'VertexPair',           'FromTo']
+hm_v =      ['int',     'TimeOp',       'HashSet_int',         'RGANode',       'int',          'int',          'List_int',         'int',          'TimeValue',        'HashSet_int',          'HashSet_IDNext',       'int',          'HashSet_IDValue_List_int',         'int',          'int',              'HashSet_IDValue_int',      'HashSet_IDValue_int',          'TimeValue',        'TimeValue',        'TimeValue_List_int',       'TimeValue_int',        'TimeValue_int']
+hm_eq =     ['a == b',  'a == b',       'a == b',              'a.equals(b)',   'a.equals(b)',  'a.equals(b)',  'a == b',           'a.equals(b)',  'a.equals(b)',      'a.equals(b)',          'a.equals(b)',          'a.equals(b)',  'a == b',                           'a.equals(b)',  'a.equals(b)',      'a.equals(b)',              'a.equals(b)',                  'a == b',           'a.equals(b)',      'a == b',                   'a.equals(b)',          'a.equals(b)']
+hm_to =     ['a',       'a',            'a',                   'a.toInt()',     'a.toInt()',    'a.toInt()',    'a',                'a.toInt()',    'a.toInt()',        'a.toInt()',            'a.toInt()',            'a.toInt()',    'a',                                'a.toInt()',    'a.toInt()',        'a.toInt()',                'a.toInt()',                    'a',                'a.toInt()',        'a',                        'a.toInt()',            'a.toInt()']
+hm_k_null = ['-1',      '-1',           '-1',                  'null',          'null',         'null',          '-1',              'null',         'null',             'null',                 'null',                 'null',         '-1',                               'null',         'null',             'null',                     'null',                         '-1',               'null',             '-1',                       'null',                 'null']
+hm_v_null = ['-1',      'null : TimeOp','null : HashSet_int',  'null : RGANode','-1',           '-1',            'null : List_int', '-1',           'null : TimeValue', 'null : HashSet_int',   'null : HashSet_IDNext','-1',           'null : HashSet_IDValue_List_int',  '-1',           '-1',               'null : HashSet_IDValue_int','null : HashSet_IDValue_int',  'null : TimeValue', 'null : TimeValue', 'null : TimeValue_List_int','null : TimeValue_int', 'null : TimeValue_int']
 hm_inf = open('gen_hashmap.enc', 'r')
 hm_gen = hm_inf.read()
 hm_inf.close()
@@ -44,8 +125,8 @@ for k in hm_k:
 
 
 
-hs_t = ['int', 'NodeID', 'VertexPair', 'FromTo', 'IDNext']
-hs_null = ['-1', 'null', 'null', 'null','null']
+hs_t = ['int', 'NodeID', 'VertexPair', 'FromTo', 'IDNext', 'IDValue_List_int', 'IDValue_int']
+hs_null = ['-1', 'null', 'null', 'null','null', 'null', 'null']
 hs_inf = open('gen_hashset.enc', 'r')
 hs_gen = hs_inf.read()
 hs_inf.close()
@@ -61,7 +142,7 @@ for t in hs_t:
 outf.close()
 
 
-pm_k = ['FromTo', 'VertexPair_int ', 'int']
+pm_k = ['FromTo', 'VertexPair', 'int']
 pm_v = ['int', 'int', 'List_int']
 pm_v_null = ['-1', '-1', 'null : List_int']
 pm_to = ['key.from + key.to * 73', 'key.a + key.b * 73', 'key * 73']
@@ -69,31 +150,33 @@ pm_infs = ['gen_map_div_time.enc', 'gen_map_op_or.enc', 'gen_map_sub.enc']
 pm_b = ['map_div_time', 'map_op_or', 'map_sub']
 bi = 0
 for inf in pm_infs:
-    pm_gen = inf.read()
-    inf.close()
+    infile = open(inf, 'r')
+    pm_gen = infile.read()
+    infile.close()
     pm_outf = open(inf[4:], 'w')
-    pm_outf.write('bundle' + pm_b[bi] + 'where')
+    pm_outf.write('bundle ' + pm_b[bi] + ' where')
     i = 0
     for k in pm_k:
         res = pm_gen.replace('__KEY__', pm_k[i])
-        replace('__VALUE__', pm_v[i])
-        replace('__TOINT__', pm_to[i])
-        replace('__VALUE_NULL__', pm_v_null[i])
+        res = res.replace('__VALUE__', pm_v[i])
+        res = res.replace('__TOINT__', pm_to[i])
+        res = res.replace('__VALUE_NULL__', pm_v_null[i])
         pm_outf.write(res)
         i = i + 1
-    pm_out.close()
+    pm_outf.close()
     bi = bi + 1
 
+t_names = ['ActiveHashMap', 'SubMap', 'DivTimeMap', 'OpOrMap']
 t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
-t_set_edge = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
-t_set_neighbours = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
+t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int', 'OpOrMap_VertexPair_int']
+t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int', 'OpOrMap_int_List_int']
 #t_get = ['get', '']
 t_inf = open('gen_traffic.enc', 'r')
 t_gen = t_inf.read()
 t_inf.close()
 i = 0
-for t in t_set:
-    t_outf = open('traffic-' + t + '.enc', 'w')
+for t in t_set_sp:
+    t_outf = open('traffic-' + t_names[i] + '.enc', 'w')
     res = t_gen.replace('__SP_SET__', t)
     res = res.replace('__E_SET__', t_set_edge[i])
     res = res.replace('__N_SET__', t_set_neighbours[i])

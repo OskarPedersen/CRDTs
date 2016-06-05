@@ -1,3 +1,5 @@
+
+
 class LocalMap___KEY_____VALUE__
   localMaps : [LocalMap___KEY_____VALUE__]
   idCounter : int
@@ -50,7 +52,7 @@ class LocalMap___KEY_____VALUE__
     let set = this.hashMap.getValue(key);
     if (set != null) then {
       let maxID = -1;
-      let maxNext = __VALUE_NULL__;
+      let maxValue = __VALUE_NULL__;
       let iter = set.iterator();
       let break = false;
       while (not break) {
@@ -60,11 +62,11 @@ class LocalMap___KEY_____VALUE__
         } else {
           if (idNext.id > maxID) then {
             maxID = idNext.id;
-            maxNext = idNext.next;
+            maxValue = idNext.value;
           }
         }
       };
-      maxNext;
+      maxValue;
     } else {
       __VALUE_NULL__
     }
@@ -74,7 +76,7 @@ class LocalMap___KEY_____VALUE__
     ()
   }
 
-passive class OpOrMap
+passive class OpOrMap___KEY_____VALUE__
   localMaps : [LocalMap___KEY_____VALUE__]
 
   def init() : void {

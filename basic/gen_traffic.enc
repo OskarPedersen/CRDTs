@@ -476,7 +476,7 @@ class CarGroup
 
 class Main {
   def main() : void {
-    let numVertex = 50;
+    let numVertex = 10;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
 

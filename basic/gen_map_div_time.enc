@@ -1,20 +1,22 @@
+
+
 class DistMap___KEY_____VALUE__
   id : int
-  maps : [ActiveHashMap___KEY___TimeValue]
+  maps : [ActiveHashMap___KEY___TimeValue___VALUE__]
 
-  def init(id : int, maps : [ActiveHashMap___KEY___TimeValue]) : void {
+  def init(id : int, maps : [ActiveHashMap___KEY___TimeValue___VALUE__]) : void {
     this.id = id;
     this.maps = maps;
   }
 
   def put(key : __KEY__, value : __VALUE__) : void {
-    (this.maps[this.id]).put(key, new TimeValue(value))
+    (this.maps[this.id]).put(key, new TimeValue___VALUE__(value))
   }
 
   def getValue(key : __KEY__) : __VALUE__ {
-    let futs = new [Fut TimeValue](|this.maps|);
+    let futs = new [Fut TimeValue___VALUE__](|this.maps|);
     let latestTime = -1;
-    let latestValue = -1;
+    let latestValue = __VALUE_NULL__;
     repeat i <- |this.maps| {
       futs[i] = (this.maps[i]).getValue(key)
     };
@@ -35,14 +37,14 @@ class DistMap___KEY_____VALUE__
 
 passive class DivTimeMap___KEY_____VALUE__
   distMaps : [DistMap___KEY_____VALUE__]
-  maps : [ActiveHashMap___KEY___TimeValue]
+  maps : [ActiveHashMap___KEY___TimeValue___VALUE__]
 
   def init() : void {
     let nc = numcores();
     this.distMaps = new [DistMap___KEY_____VALUE__](nc);
-    this.maps = new [ActiveHashMap___KEY___TimeValue](nc);
+    this.maps = new [ActiveHashMap___KEY___TimeValue___VALUE__](nc);
     repeat i <- nc {
-      this.maps[i] = new ActiveHashMap___KEY___TimeValue();
+      this.maps[i] = new ActiveHashMap___KEY___TimeValue___VALUE__();
     };
     repeat i <- nc {
       this.distMaps[i] = new DistMap___KEY_____VALUE__(i, this.maps);

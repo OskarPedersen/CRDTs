@@ -1,23 +1,21 @@
 bundle map_op_or where
 
-
-
-class LocalMap
-  localMaps : [LocalMap]
+class LocalMap_FromTo_int
+  localMaps : [LocalMap_FromTo_int]
   idCounter : int
   idUpper : int
 
-  hashMap : HashMap_FromTo_HashSet_IDNext
+  hashMap : HashMap_FromTo_HashSet_IDValue_int
 
   setID : int
 
   def init(setID : int) : void {
     this.idCounter = -1;
-    this.hashMap = new HashMap_FromTo_HashSet_IDNext();
+    this.hashMap = new HashMap_FromTo_HashSet_IDValue_int();
     this.setID = setID;
   }
 
-  def setup(localMaps : [LocalMap], idUpper : int) : void {
+  def setup(localMaps : [LocalMap_FromTo_int], idUpper : int) : void {
     this.localMaps = localMaps;
     this.idUpper = idUpper;
   }
@@ -28,33 +26,33 @@ class LocalMap
     this.idUpper + this.idCounter;
   }
 
-  def put(ft : FromTo, next : int) : void {
+  def put(key : FromTo, value : int) : void {
     let id = this.nextID();
     repeat i <- |this.localMaps| {
       if (i == this.setID) then {
-        this.putDownstream(ft, next, id)
+        this.putDownstream(key, value, id)
       } else {
-        this.localMaps[i]!putDownstream(ft, next, id)
+        this.localMaps[i]!putDownstream(key, value, id)
       }
     }
   }
 
-  def putDownstream(ft : FromTo, next : int, id : int) : void {
-    let set = this.hashMap.getValue(ft);
+  def putDownstream(key : FromTo, value : int, id : int) : void {
+    let set = this.hashMap.getValue(key);
     if (set == null) then {
-      let newset = new HashSet_IDNext();
-      newset.add(new IDNext(id, next));
-      this.hashMap.put(ft, newset);
+      let newset = new HashSet_IDValue_int();
+      newset.add(new IDValue_int(id, value));
+      this.hashMap.put(key, newset);
     } else {
-      set.add(new IDNext(id, next));
+      set.add(new IDValue_int(id, value));
     }
   }
 
-  def getValue(ft : FromTo) : int {
-    let set = this.hashMap.getValue(ft);
+  def getValue(key : FromTo) : int {
+    let set = this.hashMap.getValue(key);
     if (set != null) then {
       let maxID = -1;
-      let maxNext = -1;
+      let maxValue = -1;
       let iter = set.iterator();
       let break = false;
       while (not break) {
@@ -64,11 +62,11 @@ class LocalMap
         } else {
           if (idNext.id > maxID) then {
             maxID = idNext.id;
-            maxNext = idNext.next;
+            maxValue = idNext.value;
           }
         }
       };
-      maxNext;
+      maxValue;
     } else {
       -1
     }
@@ -78,13 +76,13 @@ class LocalMap
     ()
   }
 
-passive class OpOrMap
-  localMaps : [LocalMap]
+passive class OpOrMap_FromTo_int
+  localMaps : [LocalMap_FromTo_int]
 
   def init() : void {
-    this.localMaps = new [LocalMap](numcores());
+    this.localMaps = new [LocalMap_FromTo_int](numcores());
     repeat i <- |this.localMaps| {
-      this.localMaps[i] = new LocalMap(i)
+      this.localMaps[i] = new LocalMap_FromTo_int(i)
     };
     repeat i <- |this.localMaps| {
       (this.localMaps[i]).setup(this.localMaps, (intMax() / |this.localMaps|) * i)
@@ -92,12 +90,222 @@ passive class OpOrMap
   }
 
 
-  def put(ft : FromTo, next : int) : void {
-    (this.localMaps[core()]).put(ft, next)
+  def put(key : FromTo, value : int) : void {
+    (this.localMaps[core()]).put(key, value)
   }
 
-  def getValue(ft : FromTo) : Fut int {
-    (this.localMaps[core()]).getValue(ft)
+  def getValue(key : FromTo) : Fut int {
+    (this.localMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.localMaps| {
+      get (this.localMaps[i]).wait()
+    }
+  }
+
+
+class LocalMap_VertexPair_int
+  localMaps : [LocalMap_VertexPair_int]
+  idCounter : int
+  idUpper : int
+
+  hashMap : HashMap_VertexPair_HashSet_IDValue_int
+
+  setID : int
+
+  def init(setID : int) : void {
+    this.idCounter = -1;
+    this.hashMap = new HashMap_VertexPair_HashSet_IDValue_int();
+    this.setID = setID;
+  }
+
+  def setup(localMaps : [LocalMap_VertexPair_int], idUpper : int) : void {
+    this.localMaps = localMaps;
+    this.idUpper = idUpper;
+  }
+
+  def nextID() : int {
+    -- IDs ordered by nodes
+    this.idCounter = this.idCounter + 1;
+    this.idUpper + this.idCounter;
+  }
+
+  def put(key : VertexPair, value : int) : void {
+    let id = this.nextID();
+    repeat i <- |this.localMaps| {
+      if (i == this.setID) then {
+        this.putDownstream(key, value, id)
+      } else {
+        this.localMaps[i]!putDownstream(key, value, id)
+      }
+    }
+  }
+
+  def putDownstream(key : VertexPair, value : int, id : int) : void {
+    let set = this.hashMap.getValue(key);
+    if (set == null) then {
+      let newset = new HashSet_IDValue_int();
+      newset.add(new IDValue_int(id, value));
+      this.hashMap.put(key, newset);
+    } else {
+      set.add(new IDValue_int(id, value));
+    }
+  }
+
+  def getValue(key : VertexPair) : int {
+    let set = this.hashMap.getValue(key);
+    if (set != null) then {
+      let maxID = -1;
+      let maxValue = -1;
+      let iter = set.iterator();
+      let break = false;
+      while (not break) {
+        let idNext = iter.next();
+        if (idNext == null) then {
+          break = true;
+        } else {
+          if (idNext.id > maxID) then {
+            maxID = idNext.id;
+            maxValue = idNext.value;
+          }
+        }
+      };
+      maxValue;
+    } else {
+      -1
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class OpOrMap_VertexPair_int
+  localMaps : [LocalMap_VertexPair_int]
+
+  def init() : void {
+    this.localMaps = new [LocalMap_VertexPair_int](numcores());
+    repeat i <- |this.localMaps| {
+      this.localMaps[i] = new LocalMap_VertexPair_int(i)
+    };
+    repeat i <- |this.localMaps| {
+      (this.localMaps[i]).setup(this.localMaps, (intMax() / |this.localMaps|) * i)
+    }
+  }
+
+
+  def put(key : VertexPair, value : int) : void {
+    (this.localMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : VertexPair) : Fut int {
+    (this.localMaps[core()]).getValue(key)
+  }
+
+  def wait() : void {
+    repeat i <- |this.localMaps| {
+      get (this.localMaps[i]).wait()
+    }
+  }
+
+
+class LocalMap_int_List_int
+  localMaps : [LocalMap_int_List_int]
+  idCounter : int
+  idUpper : int
+
+  hashMap : HashMap_int_HashSet_IDValue_List_int
+
+  setID : int
+
+  def init(setID : int) : void {
+    this.idCounter = -1;
+    this.hashMap = new HashMap_int_HashSet_IDValue_List_int();
+    this.setID = setID;
+  }
+
+  def setup(localMaps : [LocalMap_int_List_int], idUpper : int) : void {
+    this.localMaps = localMaps;
+    this.idUpper = idUpper;
+  }
+
+  def nextID() : int {
+    -- IDs ordered by nodes
+    this.idCounter = this.idCounter + 1;
+    this.idUpper + this.idCounter;
+  }
+
+  def put(key : int, value : List_int) : void {
+    let id = this.nextID();
+    repeat i <- |this.localMaps| {
+      if (i == this.setID) then {
+        this.putDownstream(key, value, id)
+      } else {
+        this.localMaps[i]!putDownstream(key, value, id)
+      }
+    }
+  }
+
+  def putDownstream(key : int, value : List_int, id : int) : void {
+    let set = this.hashMap.getValue(key);
+    if (set == null) then {
+      let newset = new HashSet_IDValue_List_int();
+      newset.add(new IDValue_List_int(id, value));
+      this.hashMap.put(key, newset);
+    } else {
+      set.add(new IDValue_List_int(id, value));
+    }
+  }
+
+  def getValue(key : int) : List_int {
+    let set = this.hashMap.getValue(key);
+    if (set != null) then {
+      let maxID = -1;
+      let maxValue = null : List_int;
+      let iter = set.iterator();
+      let break = false;
+      while (not break) {
+        let idNext = iter.next();
+        if (idNext == null) then {
+          break = true;
+        } else {
+          if (idNext.id > maxID) then {
+            maxID = idNext.id;
+            maxValue = idNext.value;
+          }
+        }
+      };
+      maxValue;
+    } else {
+      null : List_int
+    }
+  }
+
+  def wait() : void {
+    ()
+  }
+
+passive class OpOrMap_int_List_int
+  localMaps : [LocalMap_int_List_int]
+
+  def init() : void {
+    this.localMaps = new [LocalMap_int_List_int](numcores());
+    repeat i <- |this.localMaps| {
+      this.localMaps[i] = new LocalMap_int_List_int(i)
+    };
+    repeat i <- |this.localMaps| {
+      (this.localMaps[i]).setup(this.localMaps, (intMax() / |this.localMaps|) * i)
+    }
+  }
+
+
+  def put(key : int, value : List_int) : void {
+    (this.localMaps[core()]).put(key, value)
+  }
+
+  def getValue(key : int) : Fut List_int {
+    (this.localMaps[core()]).getValue(key)
   }
 
   def wait() : void {

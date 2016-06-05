@@ -3,8 +3,8 @@ import all
 
 class RoadGraph
   --vertices : HashSet_int
-  edges : ActiveHashMap_VertexPair_int -- TODO do these two need to be active?
-  neighbourMap : ActiveHashMap_int_List_int -- TODO ^ They should be read only except for initialization
+  edges : SubMap_VertexPair_int -- TODO do these two need to be active?
+  neighbourMap : SubMap_int_List_int -- TODO ^ They should be read only except for initialization
   -- TODO ^ these two should also be of parallel maps!
 
   edgesPuts : int
@@ -18,10 +18,10 @@ class RoadGraph
     --repeat i <- numVertex {
     --  this.vertices.add(i);
     --};
-    this.edges = new ActiveHashMap_VertexPair_int();
+    this.edges = new SubMap_VertexPair_int();
     this.edgesPuts = 0;
     this.edgesGets = 0;
-    this.neighbourMap = new ActiveHashMap_int_List_int();
+    this.neighbourMap = new SubMap_int_List_int();
     this.neighbourGets = 0;
     this.neighbourPuts = 0;
 
@@ -74,7 +74,7 @@ class RoadGraph
     this.neighbourPuts
   }
 
-  def getEdges() : ActiveHashMap_VertexPair_int {
+  def getEdges() : SubMap_VertexPair_int {
     this.edges
   }
 
@@ -114,19 +114,19 @@ class RoadGraph
     this.edges.put(vp, newWeight);
   }
 
-  def getNeighbourMap() : ActiveHashMap_int_List_int {
+  def getNeighbourMap() : SubMap_int_List_int {
     this.neighbourMap
   }
 
 
 class ShortestPaths
-  map : SubMap
+  map : SubMap_FromTo_int
   -- TODO this could be just a matrix (almost entierly filled)
   gets : int
   updateQueue : UpdateQueue
 
   def init() : void {
-    this.map = new SubMap();
+    this.map = new SubMap_FromTo_int();
     this.gets = 0;
 
   }
@@ -152,7 +152,7 @@ class ShortestPaths
     get this.map.getValue(new FromTo(current, goal));
   }
 
-  def getNextVertexMap() : SubMap {
+  def getNextVertexMap() : SubMap_FromTo_int {
     this.map
   }
 
@@ -160,12 +160,12 @@ class UpdateQueue
   --list : List_FromTo
   pathWorkers : [PathWorker]
   nextWorker : int
-  nextVertexMap : SubMap
-  neighbourMap : ActiveHashMap_int_List_int
-  edges : ActiveHashMap_VertexPair_int
+  nextVertexMap : SubMap_FromTo_int
+  neighbourMap : SubMap_int_List_int
+  edges : SubMap_VertexPair_int
 
-  def init(numVertex : int, nextVertexMap : SubMap,
-      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
+  def init(numVertex : int, nextVertexMap : SubMap_FromTo_int,
+      neighbourMap : SubMap_int_List_int, edges : SubMap_VertexPair_int) : void {
     this.nextVertexMap = nextVertexMap;
     this.neighbourMap = neighbourMap;
     this.edges = edges;
@@ -256,23 +256,8 @@ class PathWorker
     this.neighbourGets
   }
 
-{-  def start(updateQueue : UpdateQueue, nextVertexMap : SubMap,
-      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
-    while (true) { -- how/when should this end?
-      suspend;
-      let ft = get updateQueue.pop();
-      if (ft == null) then {
-        ()
-      } else {
-          --print("PathWorker: Calculate path");
-          this.calculatePath(ft, nextVertexMap, neighbourMap, edges);
-          --print("PathWorker: Finished calculating path");
-      }
-    }
-  } -}
-
-  def calculatePath(ft : FromTo, nextVertexMap : SubMap,
-      neighbourMap : ActiveHashMap_int_List_int, edges : ActiveHashMap_VertexPair_int) : void {
+  def calculatePath(ft : FromTo, nextVertexMap : SubMap_FromTo_int,
+      neighbourMap : SubMap_int_List_int, edges : SubMap_VertexPair_int) : void {
     let dist = new [int](this.numVertex);
     let prev = new [int](this.numVertex);
     let Q = new List_int();
@@ -341,7 +326,7 @@ class WeightHandler
   randomEdgesIndex : int
   randomWeightDeltasIndex : int
 
-  def init(numVertex : int, neighbourMap : ActiveHashMap_int_List_int) : void {
+  def init(numVertex : int, neighbourMap : SubMap_int_List_int) : void {
     this.numVertex = numVertex;
     let vertices = randomSeq(numVertex, 0, numVertex - 1, 8264);
     let neighbours = randomSeq(|vertices|, 0, intMax(), 9465);
@@ -459,7 +444,7 @@ passive class Car
 class CarGroup
   cars : [Car]
 
-  def init(seed : int, neighbourMap : ActiveHashMap_int_List_int, numVertex : int) : void {
+  def init(seed : int, neighbourMap : SubMap_int_List_int, numVertex : int) : void {
     let numCars = 1;
     this.cars = new [Car](numCars);
     let carNodes = randomSeq(numCars * 2, 0, numVertex - 1, seed);
@@ -491,7 +476,7 @@ class CarGroup
 
 class Main {
   def main() : void {
-    let numVertex = 50;
+    let numVertex = 10;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
 
@@ -516,7 +501,7 @@ class Main {
     let carGroupFuts = new [Fut void](numCarGroups);
 
     print("Main: Setup complete.");
-    tic();
+    tic(); -- TODO TODO should we measure the setup time as well?
     repeat i <- numVertex {
       repeat j <- numVertex {
         if (i < j) then {

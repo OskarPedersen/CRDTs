@@ -1,8 +1,6 @@
 bundle map_sub where
 
---class PrivateSubMap
-
-passive class SubMap
+passive class SubMap_FromTo_int
   subMaps : [ActiveHashMap_FromTo_int]
 
   def init () : void {
@@ -13,16 +11,76 @@ passive class SubMap
     }
   }
 
-  def put(ft : FromTo, next : int) : void {
-    (this.subMaps[this.hash(ft)]).put(ft, next)
+  def put(key : FromTo, next : int) : void {
+    (this.subMaps[this.hash(key)]).put(key, next)
   }
 
-  def getValue(ft : FromTo) : Fut int {
-    (this.subMaps[this.hash(ft)]).getValue(ft)
+  def getValue(key : FromTo) : Fut int {
+    (this.subMaps[this.hash(key)]).getValue(key)
   }
 
-  def hash(ft : FromTo) : int {
-    (ft.from + ft.to * 73) % |this.subMaps|
+  def hash(key : FromTo) : int {
+    key.from + key.to * 73 % |this.subMaps|
+  }
+
+  def wait() : void {
+    repeat i <- |this.subMaps| {
+      get (this.subMaps[i]).wait();
+    }
+  }
+
+
+passive class SubMap_VertexPair_int
+  subMaps : [ActiveHashMap_VertexPair_int]
+
+  def init () : void {
+    let nc = numcores();
+    this.subMaps = new [ActiveHashMap_VertexPair_int](nc);
+    repeat i <- nc {
+      this.subMaps[i] = new ActiveHashMap_VertexPair_int()
+    }
+  }
+
+  def put(key : VertexPair, next : int) : void {
+    (this.subMaps[this.hash(key)]).put(key, next)
+  }
+
+  def getValue(key : VertexPair) : Fut int {
+    (this.subMaps[this.hash(key)]).getValue(key)
+  }
+
+  def hash(key : VertexPair) : int {
+    key.a + key.b * 73 % |this.subMaps|
+  }
+
+  def wait() : void {
+    repeat i <- |this.subMaps| {
+      get (this.subMaps[i]).wait();
+    }
+  }
+
+
+passive class SubMap_int_List_int
+  subMaps : [ActiveHashMap_int_List_int]
+
+  def init () : void {
+    let nc = numcores();
+    this.subMaps = new [ActiveHashMap_int_List_int](nc);
+    repeat i <- nc {
+      this.subMaps[i] = new ActiveHashMap_int_List_int()
+    }
+  }
+
+  def put(key : int, next : List_int) : void {
+    (this.subMaps[this.hash(key)]).put(key, next)
+  }
+
+  def getValue(key : int) : Fut List_int {
+    (this.subMaps[this.hash(key)]).getValue(key)
+  }
+
+  def hash(key : int) : int {
+    key * 73 % |this.subMaps|
   }
 
   def wait() : void {
