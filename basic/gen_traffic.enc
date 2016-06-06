@@ -434,7 +434,7 @@ passive class Car
         next = get shortestPaths.getNextVertex(this.current, this.goal);
         dbgSpins = dbgSpins + 1;
       };
-      print("Car: Travel spins: {}\n", dbgSpins);
+      --print("Car: Travel spins: {}\n", dbgSpins);
       this.current = next;
       --print("Car: current {}\n", this.current);
       false
@@ -476,6 +476,8 @@ class CarGroup
 
 class Main {
   def main() : void {
+    tic();
+    let version = __VERSION__;
     let numVertex = 10;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
@@ -500,8 +502,8 @@ class Main {
     --print("Main: CarGroups created.");
     let carGroupFuts = new [Fut void](numCarGroups);
 
-    print("Main: Setup complete.");
-    tic(); -- TODO TODO should we measure the setup time as well?
+    --print("Main: Setup complete.");
+    --tic(); -- TODO TODO should we measure the setup time as well?
     repeat i <- numVertex {
       repeat j <- numVertex {
         if (i < j) then {
@@ -511,32 +513,32 @@ class Main {
         }
       }
     };
-    print("Main: Initial paths pushed");
+    --print("Main: Initial paths pushed");
     repeat i <- numCarGroups {
       carGroupFuts[i] = (carGroups[i]).start(wh, roadGraph, sp, uq);
     };
-    print("Main: Car Groups started.");
+    --print("Main: Car Groups started.");
     repeat i <- numCarGroups {
       get carGroupFuts[i];
     };
-    print("Main: Car Groups finished.");
+    --print("Main: Car Groups finished.");
     let time = toc();
-    print("Time: {} ms\n", time);
-    print("Number of gets: {}\n", get sp.getGets());
+    print("{}: {} ms\n", version, time);
+    --print("Number of gets: {}\n", get sp.getGets());
     let puts = get uq.getPuts();
-    print("Number of puts: {}\n", puts);
+    --print("Number of puts: {}\n", puts);
 
     let edgePuts = get roadGraph.getEdgesPuts();
     let edgeGetsRG = get roadGraph.getEdgesGets();
     let edgeGetsUQ = get uq.getEdgesGets();
-    print("Number of edge gets: {}\n", (edgeGetsRG + edgeGetsUQ));
-    print("Number of edge puts: {}\n", (edgePuts));
+    --print("Number of edge gets: {}\n", (edgeGetsRG + edgeGetsUQ));
+    --print("Number of edge puts: {}\n", (edgePuts));
 
     let neighbourPuts = get roadGraph.getNeighbourPuts();
     let neighbourGetsRG = get roadGraph.getNeighbourGets();
     let neighbourGetsUQ = get uq.getNeighbourGets();
-    print("Number of neighbour gets: {}\n", (neighbourGetsUQ + neighbourGetsRG));
-    print("Number of neighbour puts: {}\n", neighbourPuts);
+    --print("Number of neighbour gets: {}\n", (neighbourGetsUQ + neighbourGetsRG));
+    --print("Number of neighbour puts: {}\n", neighbourPuts);
     embed void exit(EXIT_SUCCESS); end;
   }
 }

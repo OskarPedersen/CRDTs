@@ -20,7 +20,7 @@ passive class SubMap___KEY_____VALUE__
   }
 
   def hash(key : __KEY__) : int {
-    __TOINT__ % |this.subMaps|
+    (__TOINT__) % |this.subMaps|
   }
 
   def wait() : void {

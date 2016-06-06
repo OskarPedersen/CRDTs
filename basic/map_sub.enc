@@ -20,7 +20,7 @@ passive class SubMap_FromTo_int
   }
 
   def hash(key : FromTo) : int {
-    key.from + key.to * 73 % |this.subMaps|
+    (key.from + key.to * 73) % |this.subMaps|
   }
 
   def wait() : void {
@@ -50,7 +50,7 @@ passive class SubMap_VertexPair_int
   }
 
   def hash(key : VertexPair) : int {
-    key.a + key.b * 73 % |this.subMaps|
+    (key.a + key.b * 73) % |this.subMaps|
   }
 
   def wait() : void {
@@ -80,7 +80,7 @@ passive class SubMap_int_List_int
   }
 
   def hash(key : int) : int {
-    key * 73 % |this.subMaps|
+    (key * 73) % |this.subMaps|
   }
 
   def wait() : void {

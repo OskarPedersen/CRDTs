@@ -65,7 +65,7 @@ passive class TimeValue_List_int
 
     def toInt() : int {
       let value = this.value;
-      this.time + embed int ((int64_t )#{value}); end
+      this.time --+ embed int ((int64_t )#{value}); end
     }
 ----------- END of manually created 'generic' IDValue and TimeValue---------------
 
@@ -166,20 +166,23 @@ for inf in pm_infs:
     pm_outf.close()
     bi = bi + 1
 
-t_names = ['ActiveHashMap', 'SubMap', 'DivTimeMap', 'OpOrMap']
-t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
-t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int', 'OpOrMap_VertexPair_int']
-t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int', 'OpOrMap_int_List_int']
+
+t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int']#, 'OpOrMap_FromTo_int']
+t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int']#, 'OpOrMap_VertexPair_int']
+t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int']#, 'OpOrMap_int_List_int']
 #t_get = ['get', '']
 t_inf = open('gen_traffic.enc', 'r')
 t_gen = t_inf.read()
 t_inf.close()
-i = 0
-for t in t_set_sp:
-    t_outf = open('traffic-' + t_names[i] + '.enc', 'w')
-    res = t_gen.replace('__SP_SET__', t)
-    res = res.replace('__E_SET__', t_set_edge[i])
-    res = res.replace('__N_SET__', t_set_neighbours[i])
-    t_outf.write(res)
-    t_outf.close()
-    i = i + 1
+
+for sp in t_set_sp:
+    for edge in t_set_edge:
+        for neighbour in t_set_neighbours:
+            version = sp[0] + edge[0] + neighbour[0]
+            t_outf = open('traffic/traffic-' + version + '.enc', 'w')
+            res = t_gen.replace('__SP_SET__', sp)
+            res = res.replace('__E_SET__', edge)
+            res = res.replace('__N_SET__', neighbour)
+            res = res.replace('__VERSION__', '"' + version + '"')
+            t_outf.write(res)
+            t_outf.close()
