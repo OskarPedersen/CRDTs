@@ -67,7 +67,7 @@ passive class TimeValue_List_int
 
     def toInt() : int {
       let value = this.value;
-      this.time --+ embed int ((int64_t )#{value}); end
+      this.time + embed int ((int64_t )#{value}); end
     }
 ----------- END of manually created 'generic' IDValue and TimeValue---------------
 

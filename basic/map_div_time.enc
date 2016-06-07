@@ -10,12 +10,10 @@ class DistMap_FromTo_int
   }
 
   def put(key : FromTo, value : int) : void {
-    print("DistMap_FromTo_int Put: key {} value {}\n", key, value);
     (this.maps[this.id]).put(key, new TimeValue_int(value))
   }
 
   def getValue(key : FromTo) : int {
-    print("DistMap_FromTo_int Get: key {}\n", key);
     let futs = new [Fut TimeValue_int](|this.maps|);
     let latestTime = -1;
     let latestValue = -1;
@@ -79,12 +77,10 @@ class DistMap_VertexPair_int
   }
 
   def put(key : VertexPair, value : int) : void {
-    print("DistMap_VertexPair_int Put: key {} value {}\n", key, value);
     (this.maps[this.id]).put(key, new TimeValue_int(value))
   }
 
   def getValue(key : VertexPair) : int {
-    print("DistMap_VertexPair_int Get: key {}\n", key);
     let futs = new [Fut TimeValue_int](|this.maps|);
     let latestTime = -1;
     let latestValue = -1;
@@ -148,25 +144,18 @@ class DistMap_int_List_int
   }
 
   def put(key : int, value : List_int) : void {
-    print("DistMap_int_List_int Put: key {} value {}\n", key, value);
     (this.maps[this.id]).put(key, new TimeValue_List_int(value))
   }
 
   def getValue(key : int) : List_int {
-    print("DistMap_int_List_int Get: key {}\n", key);
     let futs = new [Fut TimeValue_List_int](|this.maps|);
     let latestTime = -1;
-    let tmp = (get (this.maps[this.id]).getValue(key));
-    let latestValue =  null : List_int;
-    print("DistMap_int_List_int Get: before futures");
+    let latestValue = null : List_int;
     repeat i <- |this.maps| {
       futs[i] = (this.maps[i]).getValue(key)
     };
-    print("DistMap_int_List_int Get: Futures collected");
     repeat i <- |this.maps| {
-      print("Before");
       let timeValue = get (futs[i]);
-      print("After");
       if (timeValue != null) then {
         if (timeValue.time > latestTime) then {
           latestTime = timeValue.time;
@@ -174,7 +163,6 @@ class DistMap_int_List_int
         }
       }
     };
-    print("DistMap_int_List_int Get: latestValue {}\n", latestValue);
     latestValue;
   }
 

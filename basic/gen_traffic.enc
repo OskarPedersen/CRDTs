@@ -143,7 +143,7 @@ class ShortestPaths
     this.gets = this.gets + 1;
     --let dbgSpins = 0;
     while (not get this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
-      --print("ShortestPaths: queue not empty");
+      print("ShortestPaths: queue not empty");
       --dbgSpins = dbgSpins + 1;
       ()
     };
@@ -478,7 +478,7 @@ class Main {
   def main() : void {
     tic();
     let version = __VERSION__;
-    let numVertex = 10;
+    let numVertex = 50;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
 
