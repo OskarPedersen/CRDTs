@@ -12,11 +12,11 @@ passive class SubMap_FromTo_int
   }
 
   def put(key : FromTo, next : int) : void {
-    1--(this.subMaps[(key.from + key.to * 73) % |this.subMaps|]).put(key, next)
+    (this.subMaps[this.hash(key)]).put(key, next)
   }
 
-  def getValue(key : FromTo) : int {
-    1--get (this.subMaps[(key.from + key.to * 73) % |this.subMaps|]).getValue(key)
+  def getValue(key : FromTo) : Fut int {
+    (this.subMaps[this.hash(key)]).getValue(key)
   }
 
   def hash(key : FromTo) : int {

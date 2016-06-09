@@ -141,14 +141,7 @@ class ShortestPaths
 
   def getNextVertex(current : int, goal : int) : int {
     this.gets = this.gets + 1;
-    --let dbgSpins = 0;
-    while (not get this.updateQueue.empty()) { -- TODO any way to do this without spinning, some sort of wait?
-      print("ShortestPaths: queue not empty");
-      --dbgSpins = dbgSpins + 1;
-      ()
-    };
-    --print("ShortestPaths: spins {}\n", dbgSpins);
-    --print("ShortestPaths: queue empty");
+    get this.updateQueue.empty();
     get this.map.getValue(new FromTo(current, goal));
   }
 
@@ -201,7 +194,7 @@ class UpdateQueue
 
   def push(ft : FromTo) : void {
     --this.list.add(ft)
-    get (this.pathWorkers[this.nextWorker]).calculatePath(ft, this.nextVertexMap,  this.neighbourMap, this.edges);
+    (this.pathWorkers[this.nextWorker]).calculatePath(ft, this.nextVertexMap,  this.neighbourMap, this.edges);
     this.nextWorker = this.nextWorker + 1;
     if (this.nextWorker >= |this.pathWorkers|) then {
       this.nextWorker = 0;
@@ -228,7 +221,9 @@ class UpdateQueue
   } -}
 
   def empty() : bool {
-    --this.list.size() == 0
+    repeat i <- |this.pathWorkers| {
+      get (this.pathWorkers[i]).wait()
+    };
     true
   }
 
@@ -243,6 +238,9 @@ class PathWorker
     this.puts = 0;
     this.edgesGets = 0;
   }
+
+  def wait() : bool
+    true
 
   def getPuts() : int {
     this.puts;
