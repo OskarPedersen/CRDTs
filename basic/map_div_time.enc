@@ -143,9 +143,27 @@ class DistMap_int_List_int
     this.maps = maps;
   }
 
-  def put(key : int, value : List_int) : void {
-    (this.maps[this.id]).put(key, new TimeValue_List_int(value))
+  def add(key : int, vertex : int) : void {
+    let map = (this.maps[this.id]);
+    let timeValue = get map.getValue(key);
+    if (timeValue == null) then {
+      let neighbourList = new List_int();
+      neighbourList.add(vertex);
+      map.put(key, new TimeValue_List_int(neighbourList));
+    } else {
+      let neighbourList = timeValue.value;
+      let newList = new List_int();
+      repeat i <- neighbourList.size() {
+        newList.add(neighbourList.at(i));
+      };
+      newList.add(vertex);
+      map.put(key, new TimeValue_List_int(neighbourList));
+    }
   }
+
+  --def put(key : int, value : List_int) : void {
+  --  (this.maps[this.id]).put(key, new TimeValue_List_int(value))
+  --}
 
   def getValue(key : int) : List_int {
     let futs = new [Fut TimeValue_List_int](|this.maps|);
@@ -185,9 +203,12 @@ passive class DivTimeMap_int_List_int
     }
   }
 
-  def put(key : int, value : List_int) : void {
-    (this.distMaps[core()]).put(key, value)
+  def add(key : int, value : int) : void {
+    (this.distMaps[core()]).add(key, value)
   }
+  --def put(key : int, value : List_int) : void {
+  --  (this.distMaps[core()]).put(key, value)
+  --}
 
   def getValue(key : int) : Fut List_int {
     (this.distMaps[core()]).getValue(key)
