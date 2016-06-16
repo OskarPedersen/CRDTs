@@ -3,8 +3,11 @@ bundle map_sub where
 passive class SubMap_FromTo_int
   subMaps : [ActiveHashMap_FromTo_int]
 
-  def init () : void {
+  def init (replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.subMaps = new [ActiveHashMap_FromTo_int](nc);
     repeat i <- nc {
       this.subMaps[i] = new ActiveHashMap_FromTo_int()
@@ -33,8 +36,11 @@ passive class SubMap_FromTo_int
 passive class SubMap_VertexPair_int
   subMaps : [ActiveHashMap_VertexPair_int]
 
-  def init () : void {
+  def init (replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.subMaps = new [ActiveHashMap_VertexPair_int](nc);
     repeat i <- nc {
       this.subMaps[i] = new ActiveHashMap_VertexPair_int()
@@ -63,8 +69,11 @@ passive class SubMap_VertexPair_int
 passive class SubMap_int_List_int
   subMaps : [ActiveHashMap_int_List_int]
 
-  def init () : void {
+  def init (replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.subMaps = new [ActiveHashMap_int_List_int](nc);
     repeat i <- nc {
       this.subMaps[i] = new ActiveHashMap_int_List_int()

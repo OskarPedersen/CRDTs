@@ -18,10 +18,10 @@ class RoadGraph
     --repeat i <- numVertex {
     --  this.vertices.add(i);
     --};
-    this.edges = new __E_SET__();
+    this.edges = new __E_SET__(__REPLICATION_E__);
     this.edgesPuts = 0;
     this.edgesGets = 0;
-    this.neighbourMap = new __N_SET__();
+    this.neighbourMap = new __N_SET__(__REPLICATION_N__);
     this.neighbourGets = 0;
     this.neighbourPuts = 0;
 
@@ -87,8 +87,12 @@ class RoadGraph
   }
 
   def addNeighbour(vertex : int, neighbour : int) : void {
-    this.neighbourGets = this.neighbourGets + 1;
+    this.neighbourGets = this.neighbourGets + 1; -- TODO are the stats correct now?
     this.neighbourPuts = this.neighbourPuts + 1;
+    __NEIGHBOUR_DIV_TIME_START__
+    this.neighbourMap.put(vertex, neighbour);
+    __NEIGHBOUR_DIV_TIME_END__
+    __NEIGHBOUR_DEFAULT_START__
     let neighbourList = get this.neighbourMap.getValue(vertex);
     if (neighbourList == null) then {
       neighbourList = new List_int();
@@ -101,7 +105,9 @@ class RoadGraph
       };
       newList.add(neighbour);
       this.neighbourMap.put(vertex, newList);
-    }
+    };
+    __NEIGHBOUR_DEFAULT_END__
+    this.neighbourMap.wait(); -- to avoid lost update
   }
 
   def getWeight(vp : VertexPair) : int {
@@ -126,7 +132,7 @@ class ShortestPaths
   updateQueue : UpdateQueue
 
   def init() : void {
-    this.map = new __SP_SET__();
+    this.map = new __SP_SET__(__REPLICATION_SP__);
     this.gets = 0;
 
   }
@@ -476,7 +482,7 @@ class Main {
   def main() : void {
     tic();
     let version = __VERSION__;
-    let numVertex = 50;
+    let numVertex = 80;
     let roadGraph = new RoadGraph(numVertex);
     --print("Main: RoadGraph created.");
 

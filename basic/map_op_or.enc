@@ -79,8 +79,12 @@ class LocalMap_FromTo_int
 passive class OpOrMap_FromTo_int
   localMaps : [LocalMap_FromTo_int]
 
-  def init() : void {
-    this.localMaps = new [LocalMap_FromTo_int](numcores());
+  def init(replication : int) : void {
+    let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
+    this.localMaps = new [LocalMap_FromTo_int](nc);
     repeat i <- |this.localMaps| {
       this.localMaps[i] = new LocalMap_FromTo_int(i)
     };
@@ -91,11 +95,11 @@ passive class OpOrMap_FromTo_int
 
 
   def put(key : FromTo, value : int) : void {
-    (this.localMaps[core()]).put(key, value)
+    (this.localMaps[core() % |this.localMaps|]).put(key, value)
   }
 
   def getValue(key : FromTo) : Fut int {
-    (this.localMaps[core()]).getValue(key)
+    (this.localMaps[core() % |this.localMaps|]).getValue(key)
   }
 
   def wait() : void {
@@ -184,8 +188,12 @@ class LocalMap_VertexPair_int
 passive class OpOrMap_VertexPair_int
   localMaps : [LocalMap_VertexPair_int]
 
-  def init() : void {
-    this.localMaps = new [LocalMap_VertexPair_int](numcores());
+  def init(replication : int) : void {
+    let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
+    this.localMaps = new [LocalMap_VertexPair_int](nc);
     repeat i <- |this.localMaps| {
       this.localMaps[i] = new LocalMap_VertexPair_int(i)
     };
@@ -196,11 +204,11 @@ passive class OpOrMap_VertexPair_int
 
 
   def put(key : VertexPair, value : int) : void {
-    (this.localMaps[core()]).put(key, value)
+    (this.localMaps[core() % |this.localMaps|]).put(key, value)
   }
 
   def getValue(key : VertexPair) : Fut int {
-    (this.localMaps[core()]).getValue(key)
+    (this.localMaps[core() % |this.localMaps|]).getValue(key)
   }
 
   def wait() : void {
@@ -289,8 +297,12 @@ class LocalMap_int_List_int
 passive class OpOrMap_int_List_int
   localMaps : [LocalMap_int_List_int]
 
-  def init() : void {
-    this.localMaps = new [LocalMap_int_List_int](numcores());
+  def init(replication : int) : void {
+    let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
+    this.localMaps = new [LocalMap_int_List_int](nc);
     repeat i <- |this.localMaps| {
       this.localMaps[i] = new LocalMap_int_List_int(i)
     };
@@ -301,11 +313,11 @@ passive class OpOrMap_int_List_int
 
 
   def put(key : int, value : List_int) : void {
-    (this.localMaps[core()]).put(key, value)
+    (this.localMaps[core() % |this.localMaps|]).put(key, value)
   }
 
   def getValue(key : int) : Fut List_int {
-    (this.localMaps[core()]).getValue(key)
+    (this.localMaps[core() % |this.localMaps|]).getValue(key)
   }
 
   def wait() : void {

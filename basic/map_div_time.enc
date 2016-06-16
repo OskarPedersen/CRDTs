@@ -39,8 +39,11 @@ passive class DivTimeMap_FromTo_int
   distMaps : [DistMap_FromTo_int]
   maps : [ActiveHashMap_FromTo_TimeValue_int]
 
-  def init() : void {
+  def init(replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.distMaps = new [DistMap_FromTo_int](nc);
     this.maps = new [ActiveHashMap_FromTo_TimeValue_int](nc);
     repeat i <- nc {
@@ -52,11 +55,11 @@ passive class DivTimeMap_FromTo_int
   }
 
   def put(key : FromTo, value : int) : void {
-    (this.distMaps[core()]).put(key, value)
+    (this.distMaps[core() % |this.distMaps|]).put(key, value)
   }
 
   def getValue(key : FromTo) : Fut int {
-    (this.distMaps[core()]).getValue(key)
+    (this.distMaps[core() % |this.distMaps|]).getValue(key)
   }
 
   def wait() : void {
@@ -106,8 +109,11 @@ passive class DivTimeMap_VertexPair_int
   distMaps : [DistMap_VertexPair_int]
   maps : [ActiveHashMap_VertexPair_TimeValue_int]
 
-  def init() : void {
+  def init(replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.distMaps = new [DistMap_VertexPair_int](nc);
     this.maps = new [ActiveHashMap_VertexPair_TimeValue_int](nc);
     repeat i <- nc {
@@ -119,99 +125,11 @@ passive class DivTimeMap_VertexPair_int
   }
 
   def put(key : VertexPair, value : int) : void {
-    (this.distMaps[core()]).put(key, value)
+    (this.distMaps[core() % |this.distMaps|]).put(key, value)
   }
 
   def getValue(key : VertexPair) : Fut int {
-    (this.distMaps[core()]).getValue(key)
-  }
-
-  def wait() : void {
-    repeat i <- |this.distMaps| {
-      get (this.distMaps[i]).wait();
-      get (this.maps[i]).wait();
-    }
-  }
-
-
-class DistMap_int_List_int
-  id : int
-  maps : [ActiveHashMap_int_TimeValue_List_int]
-
-  def init(id : int, maps : [ActiveHashMap_int_TimeValue_List_int]) : void {
-    this.id = id;
-    this.maps = maps;
-  }
-
-  def add(key : int, vertex : int) : void {
-    let map = (this.maps[this.id]);
-    let timeValue = get map.getValue(key);
-    if (timeValue == null) then {
-      let neighbourList = new List_int();
-      neighbourList.add(vertex);
-      map.put(key, new TimeValue_List_int(neighbourList));
-    } else {
-      let neighbourList = timeValue.value;
-      let newList = new List_int();
-      repeat i <- neighbourList.size() {
-        newList.add(neighbourList.at(i));
-      };
-      newList.add(vertex);
-      map.put(key, new TimeValue_List_int(neighbourList));
-    }
-  }
-
-  --def put(key : int, value : List_int) : void {
-  --  (this.maps[this.id]).put(key, new TimeValue_List_int(value))
-  --}
-
-  def getValue(key : int) : List_int {
-    let futs = new [Fut TimeValue_List_int](|this.maps|);
-    let latestTime = -1;
-    let latestValue = null : List_int;
-    repeat i <- |this.maps| {
-      futs[i] = (this.maps[i]).getValue(key)
-    };
-    repeat i <- |this.maps| {
-      let timeValue = get (futs[i]);
-      if (timeValue != null) then {
-        if (timeValue.time > latestTime) then {
-          latestTime = timeValue.time;
-          latestValue = timeValue.value;
-        }
-      }
-    };
-    latestValue;
-  }
-
-  def wait() : void
-    ()
-
-passive class DivTimeMap_int_List_int
-  distMaps : [DistMap_int_List_int]
-  maps : [ActiveHashMap_int_TimeValue_List_int]
-
-  def init() : void {
-    let nc = numcores();
-    this.distMaps = new [DistMap_int_List_int](nc);
-    this.maps = new [ActiveHashMap_int_TimeValue_List_int](nc);
-    repeat i <- nc {
-      this.maps[i] = new ActiveHashMap_int_TimeValue_List_int();
-    };
-    repeat i <- nc {
-      this.distMaps[i] = new DistMap_int_List_int(i, this.maps);
-    }
-  }
-
-  def add(key : int, value : int) : void {
-    (this.distMaps[core()]).add(key, value)
-  }
-  --def put(key : int, value : List_int) : void {
-  --  (this.distMaps[core()]).put(key, value)
-  --}
-
-  def getValue(key : int) : Fut List_int {
-    (this.distMaps[core()]).getValue(key)
+    (this.distMaps[core() % |this.distMaps|]).getValue(key)
   }
 
   def wait() : void {

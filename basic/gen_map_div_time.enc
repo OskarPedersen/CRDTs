@@ -39,8 +39,11 @@ passive class DivTimeMap___KEY_____VALUE__
   distMaps : [DistMap___KEY_____VALUE__]
   maps : [ActiveHashMap___KEY___TimeValue___VALUE__]
 
-  def init() : void {
+  def init(replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.distMaps = new [DistMap___KEY_____VALUE__](nc);
     this.maps = new [ActiveHashMap___KEY___TimeValue___VALUE__](nc);
     repeat i <- nc {
@@ -52,11 +55,11 @@ passive class DivTimeMap___KEY_____VALUE__
   }
 
   def put(key : __KEY__, value : __VALUE__) : void {
-    (this.distMaps[core()]).put(key, value)
+    (this.distMaps[core() % |this.distMaps|]).put(key, value)
   }
 
   def getValue(key : __KEY__) : Fut __VALUE__ {
-    (this.distMaps[core()]).getValue(key)
+    (this.distMaps[core() % |this.distMaps|]).getValue(key)
   }
 
   def wait() : void {

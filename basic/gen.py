@@ -161,15 +161,17 @@ for inf in pm_infs:
         res = res.replace('__VALUE__', pm_v[i])
         res = res.replace('__TOINT__', pm_to[i])
         res = res.replace('__VALUE_NULL__', pm_v_null[i])
-        pm_outf.write(res)
+        if not (inf == 'gen_map_div_time.enc' and k == 'int'):
+            pm_outf.write(res)
         i = i + 1
     pm_outf.close()
     bi = bi + 1
 
 
-t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int']#, 'OpOrMap_FromTo_int']
-t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int']#, 'OpOrMap_VertexPair_int']
-t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int']#, 'OpOrMap_int_List_int']
+t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
+t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int', 'OpOrMap_VertexPair_int']
+t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int', 'OpOrMap_int_List_int']
+t_reps = ['0', '1', '2', '4', '8']
 #t_get = ['get', '']
 t_inf = open('gen_traffic.enc', 'r')
 t_gen = t_inf.read()
@@ -178,11 +180,41 @@ t_inf.close()
 for sp in t_set_sp:
     for edge in t_set_edge:
         for neighbour in t_set_neighbours:
-            version = sp[0] + edge[0] + neighbour[0]
-            t_outf = open('traffic/traffic-' + version + '.enc', 'w')
-            res = t_gen.replace('__SP_SET__', sp)
-            res = res.replace('__E_SET__', edge)
-            res = res.replace('__N_SET__', neighbour)
-            res = res.replace('__VERSION__', '"' + version + '"')
-            t_outf.write(res)
-            t_outf.close()
+            for rep in t_reps:
+                version = sp[0] + edge[0] + neighbour[0]
+                if version == 'AAA' and rep != '0':
+                    continue
+                if version[2] == 'D' or version[2] == 'O': # segfaults for some reason
+                    continue
+                t_outf = open('traffic/traffic-' + version + rep +'.enc', 'w')
+                res = t_gen.replace('__SP_SET__', sp)
+                res = res.replace('__E_SET__', edge)
+                res = res.replace('__N_SET__', neighbour)
+                res = res.replace('__VERSION__', '"' + version + rep +'"')
+                if version[0] == 'A':
+                    res = res.replace('__REPLICATION_SP__', '')
+                else:
+                    res = res.replace('__REPLICATION_SP__', rep)
+
+                if version[1] == 'A':
+                    res = res.replace('__REPLICATION_E__', '')
+                else:
+                    res = res.replace('__REPLICATION_E__', rep)
+
+                if version[2] == 'A':
+                    res = res.replace('__REPLICATION_N__', '')
+                else:
+                    res = res.replace('__REPLICATION_N__', rep)
+
+                if neighbour == 'DivTimeMap_int_List_int':
+                    res = res.replace('__NEIGHBOUR_DIV_TIME_START__', '')
+                    res = res.replace('__NEIGHBOUR_DIV_TIME_END__', '')
+                    res = res.replace('__NEIGHBOUR_DEFAULT_START__', '{-')
+                    res = res.replace('__NEIGHBOUR_DEFAULT_END__', '-}')
+                else:
+                    res = res.replace('__NEIGHBOUR_DIV_TIME_START__', '{-')
+                    res = res.replace('__NEIGHBOUR_DIV_TIME_END__', '-}')
+                    res = res.replace('__NEIGHBOUR_DEFAULT_START__', '')
+                    res = res.replace('__NEIGHBOUR_DEFAULT_END__', '')
+                t_outf.write(res)
+                t_outf.close()

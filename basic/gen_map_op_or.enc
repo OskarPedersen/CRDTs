@@ -79,8 +79,12 @@ class LocalMap___KEY_____VALUE__
 passive class OpOrMap___KEY_____VALUE__
   localMaps : [LocalMap___KEY_____VALUE__]
 
-  def init() : void {
-    this.localMaps = new [LocalMap___KEY_____VALUE__](numcores());
+  def init(replication : int) : void {
+    let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
+    this.localMaps = new [LocalMap___KEY_____VALUE__](nc);
     repeat i <- |this.localMaps| {
       this.localMaps[i] = new LocalMap___KEY_____VALUE__(i)
     };
@@ -91,11 +95,11 @@ passive class OpOrMap___KEY_____VALUE__
 
 
   def put(key : __KEY__, value : __VALUE__) : void {
-    (this.localMaps[core()]).put(key, value)
+    (this.localMaps[core() % |this.localMaps|]).put(key, value)
   }
 
   def getValue(key : __KEY__) : Fut __VALUE__ {
-    (this.localMaps[core()]).getValue(key)
+    (this.localMaps[core() % |this.localMaps|]).getValue(key)
   }
 
   def wait() : void {
