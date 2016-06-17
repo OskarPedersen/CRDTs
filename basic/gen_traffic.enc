@@ -3,9 +3,8 @@ import all
 
 class RoadGraph
   --vertices : HashSet_int
-  edges : __E_SET__ -- TODO do these two need to be active?
-  neighbourMap : __N_SET__ -- TODO ^ They should be read only except for initialization
-  -- TODO ^ these two should also be of parallel maps!
+  edges : __E_SET__
+  neighbourMap : __N_SET__
 
   edgesPuts : int
   edgesGets : int
@@ -87,12 +86,13 @@ class RoadGraph
   }
 
   def addNeighbour(vertex : int, neighbour : int) : void {
-    this.neighbourGets = this.neighbourGets + 1; -- TODO are the stats correct now?
-    this.neighbourPuts = this.neighbourPuts + 1;
     __NEIGHBOUR_DIV_TIME_START__
     this.neighbourMap.put(vertex, neighbour);
+    this.neighbourPuts = this.neighbourPuts + 1;
     __NEIGHBOUR_DIV_TIME_END__
     __NEIGHBOUR_DEFAULT_START__
+    this.neighbourPuts = this.neighbourPuts + 1;
+    this.neighbourGets = this.neighbourGets + 1;
     let neighbourList = get this.neighbourMap.getValue(vertex);
     if (neighbourList == null) then {
       neighbourList = new List_int();
@@ -243,6 +243,7 @@ class PathWorker
     this.numVertex = numVertex;
     this.puts = 0;
     this.edgesGets = 0;
+    this.neighbourGets = 0;
   }
 
   def wait() : bool
@@ -329,14 +330,16 @@ class WeightHandler
   numVertex : int
   randomEdgesIndex : int
   randomWeightDeltasIndex : int
+  neighbourGets : int
 
   def init(numVertex : int, neighbourMap : __N_SET__) : void {
     this.numVertex = numVertex;
     let vertices = randomSeq(numVertex, 0, numVertex - 1, 8264);
     let neighbours = randomSeq(|vertices|, 0, intMax(), 9465);
     this.randomEdges = new [VertexPair](|vertices|);
+    this.neighbourGets = 0;
     repeat i <- |vertices| {
-      -- TODO neighbourGets
+      this.neighbourGets = this.neighbourGets + 1;
       let nl = get neighbourMap.getValue(vertices[i]);
       this.randomEdges[i] = new VertexPair(vertices[i], nl.at(neighbours[i] % nl.size()));
     };
@@ -350,6 +353,10 @@ class WeightHandler
 
     this.randomEdgesIndex = 0;
     this.randomWeightDeltasIndex = 0;
+  }
+
+  def getNeighbourGets() : int {
+    this.neighbourGets
   }
 
   def changeWeight(roadGraph : RoadGraph, shortestPaths : ShortestPaths, updateQueue : UpdateQueue) : void {
@@ -528,21 +535,22 @@ class Main {
     --print("Main: Car Groups finished.");
     let time = toc();
     print("{}: {} ms\n", version, time);
-    --print("Number of gets: {}\n", get sp.getGets());
+    print("Number of shortestPaths gets: {}\n", get sp.getGets());
     let puts = get uq.getPuts();
-    --print("Number of puts: {}\n", puts);
+    print("Number of shortestPaths puts: {}\n", puts);
 
     let edgePuts = get roadGraph.getEdgesPuts();
     let edgeGetsRG = get roadGraph.getEdgesGets();
     let edgeGetsUQ = get uq.getEdgesGets();
-    --print("Number of edge gets: {}\n", (edgeGetsRG + edgeGetsUQ));
-    --print("Number of edge puts: {}\n", (edgePuts));
+    print("Number of edge gets: {}\n", (edgeGetsRG + edgeGetsUQ));
+    print("Number of edge puts: {}\n", (edgePuts));
 
     let neighbourPuts = get roadGraph.getNeighbourPuts();
     let neighbourGetsRG = get roadGraph.getNeighbourGets();
     let neighbourGetsUQ = get uq.getNeighbourGets();
-    --print("Number of neighbour gets: {}\n", (neighbourGetsUQ + neighbourGetsRG));
-    --print("Number of neighbour puts: {}\n", neighbourPuts);
+    let neighbourGetsWH = get wh.getNeighbourGets();
+    print("Number of neighbour gets: {}\n", (neighbourGetsUQ + neighbourGetsRG + neighbourGetsWH));
+    print("Number of neighbour puts: {}\n", neighbourPuts);
     embed void exit(EXIT_SUCCESS); end;
   }
 }

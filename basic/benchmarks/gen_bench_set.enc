@@ -17,6 +17,7 @@ class Main
     let operations = __OPERATIONS__;
     let workers = __WORKERS__;
     let time = 0;
+    let times = new [int](run);
     repeat i <- runs {
       let set = new __SET__();
       let setWorkers = new [__SET__Worker](workers);
@@ -34,5 +35,12 @@ class Main
       --print("__SET__: {} ms\n", toc());
       time = time + toc();
     };
-    print("{}", time / runs)
+    let mean = time / runs;
+    let stdDeviation = 0;
+    repeat i <- |times| {
+      let diff = mean - times[i];
+      stdDeviation = stdDeviation + (diff * diff);
+    }
+    --print("stdDev: {} ", stdDeviation); -- TODO how to print this for the report
+    print("{}", mean);
   }
