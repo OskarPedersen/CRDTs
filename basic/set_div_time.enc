@@ -5,46 +5,58 @@ bundle set_div_time where
 class DistSet
   id : int
   maps : [ActiveHashMap_int_TimeOp]
+  distSets : [DistSet]
+  logicTime : int
 
   def init(id : int, maps : [ActiveHashMap_int_TimeOp]) : void {
     this.id = id;
     this.maps = maps;
+    this.logicTime = 0;
+  }
+
+  def setDistSets(distSets : [DistSet]) : void {
+    this.distSets = distSets;
   }
 
   def add(elem : int) : void {
-    (this.maps[this.id]).put(elem, new TimeOp(true))
+    (this.maps[this.id]).put(elem, new TimeOp(true, this.logicTime))
   }
 
   def remove(elem : int) : void {
-    (this.maps[this.id]).put(elem, new TimeOp(false))
+    (this.maps[this.id]).put(elem, new TimeOp(false, this.logicTime))
+  }
+
+  def ticTime() : void {
+      this.logicTime = this.logicTime + 1
   }
 
   def contains(elem : int) : bool {
-    let
-      futs = new [Fut TimeOp](|this.maps|)
-      latestAdd = -1
-      latestRemove = -1
-    in {
+    let futs = new [Fut TimeOp](|this.maps|);
+    let latestAdd = -1;
+    let latestRemove = -1;
 
-      repeat i <- |this.maps| {
-          futs[i] = (this.maps[i]).getValue(elem);
-      };
+    repeat i <- |this.distSets| {
+      (this.distSets[i]).ticTime()
+    };
 
-      repeat i <- |this.maps| {
-        let timeOp = get (futs[i]);
-        if (timeOp != null) then {
-          if (timeOp.op == true) then {
-            latestAdd = max(latestAdd, timeOp.time);
-          } else {
-            latestRemove = max(latestRemove, timeOp.time);
-          }
+    repeat i <- |this.maps| {
+        futs[i] = (this.maps[i]).getValue(elem);
+    };
+
+    repeat i <- |this.maps| {
+      let timeOp = get (futs[i]);
+      if (timeOp != null) then {
+        if (timeOp.op == true) then {
+          latestAdd = max(latestAdd, timeOp.time);
+        } else {
+          latestRemove = max(latestRemove, timeOp.time);
         }
-      };
-      if (latestAdd == -1) then {
-        false;
-      } else {
-        latestAdd > latestRemove
       }
+    };
+    if (latestAdd == -1) then {
+      false;
+    } else {
+      latestAdd > latestRemove
     }
   }
 
@@ -67,6 +79,9 @@ passive class DivTimeSet
     repeat i <- nc {
       this.distSets[i] = new DistSet(i, this.maps);
     };
+    repeat i <- nc {
+      (this.distSets[i]).setDistSets(this.distSets)
+    }
   }
 
   def add(elem : int) : void {

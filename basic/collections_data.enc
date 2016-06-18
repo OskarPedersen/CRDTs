@@ -39,8 +39,8 @@ passive class TimeOp
   time : int
   op : bool
 
-  def init(op : bool) : void {
-    this.time = currentTime();
+  def init(op : bool, time : int) : void {
+    this.time = time;
     this.op = op;
   }
 
