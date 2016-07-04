@@ -69,8 +69,11 @@ passive class DivTimeSet
   distSets : [DistSet]
   maps : [ActiveHashMap_int_TimeOp]
 
-  def init() : void {
+  def init(replication : int) : void {
     let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
     this.distSets = new [DistSet](nc);
     this.maps = new [ActiveHashMap_int_TimeOp](nc);
     repeat i <- nc {
@@ -85,15 +88,15 @@ passive class DivTimeSet
   }
 
   def add(elem : int) : void {
-    (this.distSets[core()]).add(elem)
+    (this.distSets[core() % |this.distSets|]).add(elem)
   }
 
   def remove(elem : int) : void {
-    (this.distSets[core()]).remove(elem)
+    (this.distSets[core() % |this.distSets|]).remove(elem)
   }
 
   def contains(elem : int) : Fut bool {
-    (this.distSets[core()]).contains(elem)
+    (this.distSets[core() % |this.distSets|]).contains(elem)
   }
 
   def wait() : void {

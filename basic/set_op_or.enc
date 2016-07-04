@@ -91,8 +91,12 @@ class LocalSet
 
 passive class OpOrSet
   localSets : [LocalSet]
-  def init() : void {
-    this.localSets = new [LocalSet](numcores());
+  def init(replication : int) : void {
+    let nc = numcores();
+    if (replication > 0) then {
+      nc = replication;
+    };
+    this.localSets = new [LocalSet](nc);
     repeat i <- |this.localSets| {
       this.localSets[i] = new LocalSet(i)
     };
@@ -102,15 +106,15 @@ passive class OpOrSet
   }
 
   def add(elem : int) : void {
-    (this.localSets[core()]).add(elem)
+    (this.localSets[core() % |this.localSets|]).add(elem)
   }
 
   def remove(elem : int) : void {
-    (this.localSets[core()]).remove(elem)
+    (this.localSets[core() % |this.localSets|]).remove(elem)
   }
 
   def contains(elem : int) : Fut bool {
-    (this.localSets[core()]).contains(elem)
+    (this.localSets[core() % |this.localSets|]).contains(elem)
   }
 
   def wait() : void {
@@ -120,7 +124,7 @@ passive class OpOrSet
   }
 
   def iterator() : SetIterator {
-    new SetIterator(get (this.localSets[core()]).getHashMap())
+    new SetIterator(get (this.localSets[core() % |this.localSets|]).getHashMap())
   }
 
 passive class SetIterator

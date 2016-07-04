@@ -19,7 +19,7 @@ class Main
     let time = 0;
     let times = new [int](runs);
     repeat i <- runs {
-      let set = new __SET__();
+      let set = new __SET__(__REPLICATION__);
       let setWorkers = new [__SET__Worker](workers);
       tic();
       repeat i <- |setWorkers| {
@@ -33,7 +33,9 @@ class Main
       };
       __WAIT_GET__ set.wait();
       --print("__SET__: {} ms\n", toc());
-      time = time + toc();
+      let t = toc();
+      time = time + t;
+      times[i] = t;
     };
     let mean = time / runs;
     let stdDeviation = 0;
@@ -41,6 +43,9 @@ class Main
       let diff = mean - times[i];
       stdDeviation = stdDeviation + (diff * diff);
     };
+    stdDeviation = stdDeviation / |times|;
+    stdDeviation = sqrt(stdDeviation);
     --print("stdDev: {} ", stdDeviation); -- TODO how to print this for the report
-    print("{}", mean);
+    --print("{}", mean);
+    print("__FILE__ {} {}\n", mean, stdDeviation);
   }

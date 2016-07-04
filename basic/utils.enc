@@ -9,7 +9,8 @@ embed
   #include <sys/time.h>
   #include <stdlib.h>
   #include <time.h>
-
+  #include <math.h>
+  
   long sysconf(int name);
   int sched_getcpu(void);
 
@@ -119,4 +120,8 @@ def intMax() : int {
 
 def intMin() : int {
   -intMax() - 1;
+}
+
+def sqrt(a : int) : int {
+  embed int sqrt(#{a}); end
 }
