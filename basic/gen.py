@@ -171,7 +171,7 @@ for inf in pm_infs:
 t_set_sp = ['ActiveHashMap_FromTo_int', 'SubMap_FromTo_int', 'DivTimeMap_FromTo_int', 'OpOrMap_FromTo_int']
 t_set_edge = ['ActiveHashMap_VertexPair_int', 'SubMap_VertexPair_int', 'DivTimeMap_VertexPair_int', 'OpOrMap_VertexPair_int']
 t_set_neighbours = ['ActiveHashMap_int_List_int', 'SubMap_int_List_int', 'DivTimeMap_int_List_int', 'OpOrMap_int_List_int']
-t_reps = ['0', '1', '2', '4', '8']
+t_reps = ['1', '2', '4', '8', '16', '32']
 #t_get = ['get', '']
 t_inf = open('gen_traffic.enc', 'r')
 t_gen = t_inf.read()
@@ -182,7 +182,7 @@ for sp in t_set_sp:
         for neighbour in t_set_neighbours:
             for rep in t_reps:
                 version = sp[0] + edge[0] + neighbour[0]
-                if version == 'AAA' and rep != '0':
+                if version == 'AAA' and rep != '1':
                     continue
                 if version[2] == 'D' or version[2] == 'O': # segfaults for some reason
                     continue

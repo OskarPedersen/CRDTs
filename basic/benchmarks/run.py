@@ -1,4 +1,4 @@
-from subprocess import call
+afrom subprocess import call
 from os import listdir
 from os.path import isfile, join
 import sys
@@ -17,7 +17,7 @@ for f in files:
     #    sys.stdout.flush()
     #sys.stdout.write(" & ")
     #sys.stdout.flush()
-    timout = 150
+    timeout = 150
     exitcode = call(["timeout", str(timeout), "generated/" + f[:-4]]) # If timeout becomes necessary http://linux.die.net/man/1/timeout
     if exitcode == 124:
         print(f[:-4] + "total >" +str(timeout))
